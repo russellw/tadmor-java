@@ -11,9 +11,9 @@ it; see [`docs/stack.md`](docs/stack.md).
 the probes, has login, logout, and sessions for both the JSON API and the
 UI, and has the users, master data, calendar, and settings APIs, and
 invoices, bills, credit notes, and payments with posting and settlement,
-orders and stock movements, the financial reports, and year-end close.
-Banking, printing, and the rest of the UI are still to come;
-`make conformance` passes 32 of its 35 cases.
+orders and stock movements, the financial reports, year-end close, and bank
+reconciliation. Printing and the rest of the UI are still to come;
+`make conformance` passes 34 of its 35 cases.
 
 ## Layout
 
@@ -63,8 +63,9 @@ payment terms, and warehouses; fiscal years and accounting periods; and
 the ledger settings and exchange rates; sales invoices, purchase bills,
 both kinds of credit note, and customer and supplier payments, with posting,
 unposting, and auto-apply; sales and purchase orders with fulfilment; stock
-movements; year-end close and reopen; journal entries and every report
-(spec/api.md §3, §5.1 to §5.10, §5.12, §5.14).
+movements; bank statements and reconciliation; year-end close and reopen;
+journal entries and every report (spec/api.md §3, §5.1 to §5.10, §5.12 to
+§5.14).
 
 ## Build, run, test
 

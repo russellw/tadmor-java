@@ -140,6 +140,9 @@ first. In particular:
   request validation is in the service layer, where the spec's error
   messages are produced.
 - **No Testcontainers.** Tests use `TEST_DATABASE_URL`, as tadmor does.
+- **No CSV library** (Commons CSV, OpenCSV). Bank statement import needs
+  only a small RFC 4180 reader, about a hundred lines in `service/Csv.java`,
+  kept to the behavior of tadmor's Go `encoding/csv`.
 - **No Gradle.** Maven is the more widely used of the two, and the one
   Initializr defaults to.
 
