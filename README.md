@@ -11,9 +11,10 @@ it; see [`docs/stack.md`](docs/stack.md).
 the probes, has login, logout, and sessions for both the JSON API and the
 UI, and has the users, master data, calendar, and settings APIs, and
 invoices, bills, credit notes, and payments with posting and settlement,
-orders and stock movements, the financial reports, year-end close, and bank
-reconciliation. Printing and the rest of the UI are still to come;
-`make conformance` passes 34 of its 35 cases.
+orders and stock movements, the financial reports, year-end close, bank
+reconciliation, and printing and email: the JSON API is complete, and
+`make conformance` passes all 35 of its cases. The rest of the UI
+(spec/domain.md §13) is still to come.
 
 ## Layout
 
@@ -25,6 +26,7 @@ src/main/java/com/belunaro/tadmor/
   service/         business rules, shared by the JSON API and the UI
   api/             the JSON API of spec/api.md
   ui/              the server-rendered UI of spec/domain.md §13
+  printing/        a minimal PDF writer and the printed-document layout
   web/             probes and the error page, shared by both
 src/main/resources/   application.properties, Thymeleaf templates
 src/test/java/     JUnit tests (integration tests use TEST_DATABASE_URL)
@@ -53,6 +55,9 @@ No dependency download step: every artifact the build uses is already in
 | `DATABASE_URL` | none (required) | Postgres connection string, libpq form: `postgres://user:pass@host:port/db?sslmode=disable` |
 | `HTTP_ADDR` | `:8080` | Listen address, `host:port` |
 | `PORT` | unset | Listen port; overrides the port in `HTTP_ADDR` (Cloud Run injects it) |
+| `SMTP_ADDR` | unset | SMTP server `host:port`; unset disables email (the email endpoints answer 501) |
+| `SMTP_USER`, `SMTP_PASS` | unset | SMTP authentication, when the server needs it |
+| `MAIL_FROM` | unset | From address of outgoing mail |
 | `TEST_DATABASE_URL` | none | Database the integration tests wipe and use |
 | `JAVA` | `java` | Java launcher the Makefile and `tools/conformance.sh` use |
 
@@ -64,8 +69,8 @@ the ledger settings and exchange rates; sales invoices, purchase bills,
 both kinds of credit note, and customer and supplier payments, with posting,
 unposting, and auto-apply; sales and purchase orders with fulfilment; stock
 movements; bank statements and reconciliation; year-end close and reopen;
-journal entries and every report (spec/api.md §3, §5.1 to §5.10, §5.12 to
-§5.14).
+journal entries and every report; and PDFs and email for the printable
+documents: all of spec/api.md.
 
 ## Build, run, test
 

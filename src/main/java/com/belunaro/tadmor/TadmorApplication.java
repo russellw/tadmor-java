@@ -30,7 +30,9 @@ public class TadmorApplication {
 			}
 		}
 		SpringApplication app = new SpringApplication(TadmorApplication.class);
-		app.setDefaultProperties(listenProperties(System.getenv("HTTP_ADDR"), System.getenv("PORT")));
+		Map<String, Object> defaults = listenProperties(System.getenv("HTTP_ADDR"), System.getenv("PORT"));
+		defaults.putAll(mailProperties(System.getenv("SMTP_ADDR"), System.getenv("SMTP_USER"), System.getenv("SMTP_PASS")));
+		app.setDefaultProperties(defaults);
 		app.run(args);
 	}
 
@@ -51,6 +53,30 @@ public class TadmorApplication {
 			props.put("server.address", host);
 		}
 		props.put("server.port", port == null || port.isBlank() ? addr.substring(colon + 1) : port.trim());
+		return props;
+	}
+
+	/**
+	 * Maps tadmor's mail variables onto Spring's: SMTP_ADDR is host:port, and
+	 * with it unset there is no mail sender and email is disabled (501).
+	 * SMTP_USER and SMTP_PASS authenticate when set; STARTTLS is used when the
+	 * server offers it, as tadmor's mailer does.
+	 */
+	static Map<String, Object> mailProperties(String smtpAddr, String user, String password) {
+		Map<String, Object> props = new HashMap<>();
+		if (smtpAddr == null || smtpAddr.isBlank()) {
+			return props;
+		}
+		String addr = smtpAddr.strip();
+		int colon = addr.lastIndexOf(':');
+		props.put("spring.mail.host", colon < 0 ? addr : addr.substring(0, colon));
+		props.put("spring.mail.port", colon < 0 ? "25" : addr.substring(colon + 1));
+		props.put("spring.mail.properties.mail.smtp.starttls.enable", "true");
+		if (user != null && !user.isBlank()) {
+			props.put("spring.mail.username", user);
+			props.put("spring.mail.password", password == null ? "" : password);
+			props.put("spring.mail.properties.mail.smtp.auth", "true");
+		}
 		return props;
 	}
 }
