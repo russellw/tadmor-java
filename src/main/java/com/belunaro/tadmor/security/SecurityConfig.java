@@ -33,7 +33,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * /api/ needs a session and answers 401 in JSON without one, or 403 for an
  * administrator-only endpoint (spec/api.md §1.4, §3).
  * <li>UI pages need a session too, and without one redirect to the login
- * page (spec/domain.md §13 G1).
+ * page (spec/domain.md §13 G1). The UI's administrator actions are gated
+ * here as the API's are, so templates only hide them (G4).
  * <li>UI forms carry a CSRF token, kept in a cookie so no HttpSession is
  * created. The API is exempt: its session cookie is SameSite=Lax, as in
  * tadmor.
@@ -62,8 +63,15 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.PUT, "/api/settings").hasRole("ADMIN")
 						.requestMatchers(HttpMethod.POST, "/api/*/*/unpost", "/api/fiscal-years/*/close",
 								"/api/fiscal-years/*/reopen", "/api/bank-statements/*/reopen").hasRole("ADMIN")
-						.requestMatchers("/login").permitAll()
+						// The UI's administrator-only screens and actions, whose paths mirror the API's.
+						.requestMatchers("/users", "/users/**", "/year-end", "/year-end/**").hasRole("ADMIN")
+						.requestMatchers(HttpMethod.POST, "/settings", "/*/*/unpost", "/bank-statements/*/reopen")
+						.hasRole("ADMIN")
+						.requestMatchers("/login", "/app.css", "/app.js").permitAll()
 						.anyRequest().authenticated())
+				// Same-origin everything: no inline script or style anywhere in the UI.
+				.headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(
+						"default-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'")))
 				.exceptionHandling(ex -> ex
 						.defaultAuthenticationEntryPointFor(SecurityConfig::unauthorized, API)
 						.defaultAuthenticationEntryPointFor(new LoginUrlAuthenticationEntryPoint("/login"), request -> true)

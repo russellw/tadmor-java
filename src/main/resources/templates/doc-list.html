@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--/* D1, O1: newest first. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${screen.title} + ' · tadmor'">Documents · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead">
+    <h1 th:text="${screen.title}">Invoices</h1>
+    <a class="button primary" th:href="@{'/' + ${screen.path} + '/new'}" th:text="'New ' + ${screen.singular}">New</a>
+  </div>
+  <p class="empty" th:if="${rows.isEmpty()}">Nothing here yet.</p>
+  <div class="tablewrap" th:unless="${rows.isEmpty()}">
+    <table class="grid">
+      <thead><tr>
+        <th>Number</th><th th:text="${screen.partyLabel}">Party</th><th>Date</th>
+        <th th:if="${screen.dueField != null and !screen.order}" th:text="${screen.dueLabel}">Due</th>
+        <th class="num">Total</th>
+        <th class="num" th:unless="${screen.order}" th:text="${screen.creditNote} ? 'Unapplied' : 'Balance'">Balance</th>
+        <th>Status</th>
+        <th th:if="${screen.order}" th:text="${screen.sales} ? 'Invoiced' : 'Billed'">Invoiced</th>
+        <th th:if="${screen.order}" th:text="${screen.sales} ? 'Shipped' : 'Received'">Shipped</th>
+      </tr></thead>
+      <tbody>
+      <tr th:each="d : ${rows}">
+        <td><a th:href="@{'/' + ${screen.path} + '/' + ${d.get('id')}}" th:text="${d.get(screen.numberField)}">INV-1</a></td>
+        <td th:text="${parties.get('' + d.get(screen.partyField))}">Party</td>
+        <td th:text="${d.get(screen.dateField)}">2026-01-01</td>
+        <td th:if="${screen.dueField != null and !screen.order}" th:text="${d.get(screen.dueField)}">due</td>
+        <td class="num" th:text="${d.get('currency_code')} + ' ' + ${@fmt.amount(d.get('total'))}">USD 0.00</td>
+        <td class="num" th:unless="${screen.order}" th:text="${@fmt.amount(d.get('balance'))}">0.00</td>
+        <td>
+          <span class="pill" th:classappend="'s-' + ${d.get('status')}" th:text="${d.get('status')}">draft</span>
+          <span th:if="${screen.settlementField != null and d.get('status') == 'posted'}" class="pill"
+                th:classappend="'s-' + ${d.get(screen.settlementField)}" th:text="${d.get(screen.settlementField)}">unpaid</span>
+        </td>
+        <td th:if="${screen.order}"><span class="pill" th:with="v=${d.get(screen.sales ? 'invoiced_status' : 'billed_status')}"
+            th:classappend="'s-' + ${v}" th:text="${v}">none</span></td>
+        <td th:if="${screen.order}"><span class="pill" th:with="v=${d.get(screen.sales ? 'shipped_status' : 'received_status')}"
+            th:classappend="'s-' + ${v}" th:text="${v}">none</span></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!--/* D3 to D7: an invoice, bill, or credit note. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${screen.singular} + ' ' + ${doc.get(screen.numberField)} + ' · tadmor'">Document · tadmor</title></head>
+<body>
+<main th:with="status=${doc.get('status')}, ccy=${doc.get('currency_code')}, admin=${currentUser.isAdmin()}">
+  <div class="pagehead">
+    <h1><span th:text="${#strings.capitalize(screen.singular)} + ' ' + ${doc.get(screen.numberField)}">Invoice 1</span>
+      <span class="pill" th:classappend="'s-' + ${status}" th:text="${status}">draft</span>
+      <span class="pill" th:if="${status == 'posted'}" th:classappend="'s-' + ${doc.get(screen.settlementField)}"
+            th:text="${doc.get(screen.settlementField)}">unpaid</span></h1>
+    <!--/* D4: what the state allows. */-->
+    <div class="actions">
+      <form th:if="${status == 'draft'}" method="post" th:action="@{'/' + ${screen.path} + '/' + ${id} + '/post'}">
+        <button class="primary">Post</button></form>
+      <a th:if="${status == 'draft' and !orderLinked}" class="button" th:href="@{'/' + ${screen.path} + '/' + ${id} + '/edit'}">Edit</a>
+      <form th:if="${status == 'draft'}" method="post" th:action="@{'/' + ${screen.path} + '/' + ${id} + '/delete'}"
+            th:attr="data-confirm='Delete this ' + ${screen.singular} + '?'"><button class="danger">Delete</button></form>
+      <form th:if="${screen.creditNote and status == 'posted' and @fmt.nonZero(doc.get('balance'))}" method="post"
+            th:action="@{'/' + ${screen.path} + '/' + ${id} + '/apply'}"><button>Apply</button></form>
+      <form th:if="${status == 'posted' and admin}" method="post" th:action="@{'/' + ${screen.path} + '/' + ${id} + '/unpost'}"
+            th:attr="data-confirm='Unpost this ' + ${screen.singular} + '? A reversing entry is posted.'"><button>Unpost</button></form>
+    </div>
+  </div>
+  <th:block th:replace="~{parts :: messages}"></th:block>
+  <p class="muted" th:if="${orderLinked and status == 'draft'}">Produced from an order, so it cannot be edited; it can be deleted.</p>
+
+  <div class="card">
+    <dl class="facts">
+      <dt th:text="${screen.partyLabel}">Customer</dt>
+      <dd><a th:href="@{'/' + ${screen.partyChoices} + '/' + ${doc.get(screen.partyField)}}" th:text="${partyName}">Party</a></dd>
+      <dt>Date</dt><dd th:text="${doc.get(screen.dateField)}">date</dd>
+      <th:block th:if="${screen.dueField != null}"><dt th:text="${screen.dueLabel}">Due</dt><dd th:text="${doc.get(screen.dueField)}">due</dd></th:block>
+      <dt>Currency</dt><dd th:text="${ccy}">USD</dd>
+      <dt>Total</dt><dd th:text="${ccy} + ' ' + ${@fmt.amount(doc.get('total'))}">0.00</dd>
+      <dt>Applied</dt><dd th:text="${ccy} + ' ' + ${@fmt.amount(doc.get('amount_applied'))}">0.00</dd>
+      <dt th:text="${screen.creditNote} ? 'Unapplied' : 'Balance'">Balance</dt>
+      <dd th:text="${ccy} + ' ' + ${@fmt.amount(doc.get('balance'))}">0.00</dd>
+      <th:block th:if="${doc.get('reference') != null}"><dt>Reference</dt><dd th:text="${doc.get('reference')}">ref</dd></th:block>
+      <th:block th:if="${doc.get('memo') != null}"><dt>Memo</dt><dd th:text="${doc.get('memo')}">memo</dd></th:block>
+      <th:block th:if="${doc.get('journal_entry_id') != null}"><dt>Journal entry</dt>
+        <dd><a th:href="@{'/journal-entries/' + ${doc.get('journal_entry_id')}}" th:text="'#' + ${doc.get('journal_entry_id')}">#1</a></dd></th:block>
+    </dl>
+  </div>
+
+  <h2>Lines</h2>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr><th>#</th><th>Description</th><th class="num">Qty</th><th class="num" th:text="${screen.priceLabel}">Price</th>
+        <th class="num">Tax %</th><th class="num">Tax</th><th class="num">Line total</th></tr></thead>
+      <tbody><tr th:each="l : ${lines}">
+        <td th:text="${l.get('line_no')}">1</td><td th:text="${l.get('description')}">Item</td>
+        <td class="num" th:text="${@fmt.qty(l.get('quantity'))}">1</td>
+        <td class="num" th:text="${@fmt.amount(l.get(screen.priceField))}">0.00</td>
+        <td class="num" th:text="${@fmt.qty(l.get('tax_rate'))}">0</td>
+        <td class="num" th:text="${@fmt.amount(l.get('tax_amount'))}">0.00</td>
+        <td class="num" th:text="${@fmt.amount(l.get('line_total'))}">0.00</td>
+      </tr></tbody>
+    </table>
+  </div>
+  <table class="totals card mt">
+    <tr><td>Subtotal</td><td class="num" th:text="${ccy} + ' ' + ${@fmt.amount(subtotal)}">0.00</td></tr>
+    <tr><td>Tax</td><td class="num" th:text="${ccy} + ' ' + ${@fmt.amount(taxTotal)}">0.00</td></tr>
+    <tr><td><strong>Total</strong></td><td class="num"><strong th:text="${ccy} + ' ' + ${@fmt.amount(doc.get('total'))}">0.00</strong></td></tr>
+  </table>
+
+  <!--/* D5. */-->
+  <th:block th:if="${screen.creditNote}">
+    <h2>Applied to</h2>
+    <p class="empty" th:if="${applications.isEmpty()}">Not applied to anything yet.</p>
+    <div class="tablewrap" th:unless="${applications.isEmpty()}">
+      <table class="grid">
+        <thead><tr><th th:text="${screen.sales} ? 'Invoice' : 'Bill'">Invoice</th><th class="num">Applied</th></tr></thead>
+        <tbody><tr th:each="a : ${applications}">
+          <td><a th:href="@{(${screen.sales} ? '/sales-invoices/' : '/purchase-bills/') + ${a.documentId()}}"
+                 th:text="${a.documentNumber()}">INV-1</a></td>
+          <td class="num" th:text="${ccy} + ' ' + ${@fmt.amount(a.amountApplied())}">0.00</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </th:block>
+
+  <section th:replace="~{parts :: print(${screen.path}, ${id})}"></section>
+</main>
+</body>
+</html>

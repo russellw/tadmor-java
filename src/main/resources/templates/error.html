@@ -4,13 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title th:text="${status == 404 ? 'Not found' : 'Error'} + ' · tadmor'">Error · tadmor</title>
+  <link rel="stylesheet" th:href="@{/app.css}">
 </head>
 <body>
-<main>
-  <h1 th:text="${status == 404 ? 'Not found' : 'Something went wrong'}">Not found</h1>
-  <p th:if="${status == 404}">There is nothing at this address.</p>
-  <p th:unless="${status == 404}" th:text="${status} + ' ' + ${message}">500 internal error</p>
-  <p><a th:href="@{/}">Go to the home screen</a></p>
+<main class="bare">
+  <div class="card login">
+    <h1 th:text="${status == 404 ? 'Not found' : (status == 403 ? 'Not allowed' : 'Something went wrong')}">Not found</h1>
+    <p th:if="${status == 404}">There is nothing at this address.</p>
+    <p th:if="${status == 403}">This needs an administrator.</p>
+    <p th:unless="${status == 404 or status == 403}" th:text="${status} + ' ' + ${message}">500 internal error</p>
+    <p><a th:href="@{/}">Go to the home screen</a></p>
+  </div>
 </main>
 </body>
 </html>

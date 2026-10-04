@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--/* R1. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Profit and loss · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1>Profit and loss</h1></div>
+  <form th:replace="~{parts :: range('/reports/profit-and-loss', ${from}, ${to})}"></form>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Bad date.</p>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr><th>Account</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        <th:block th:each="s : ${sections}">
+          <tr class="section"><td colspan="2" th:text="${s.title()}">Revenue</td></tr>
+          <tr th:each="r : ${s.rows()}">
+            <td><a th:href="@{'/accounts/' + ${r.accountId()} + '/ledger'}" th:text="${r.code()} + ' · ' + ${r.name()}">4000</a></td>
+            <td th:replace="~{parts :: amount(${r.amount()})}"></td></tr>
+          <tr class="subtotal"><td th:text="'Total ' + ${#strings.toLowerCase(s.title())}">Total</td>
+            <td th:replace="~{parts :: amount(${s.total()})}"></td></tr>
+        </th:block>
+      </tbody>
+      <tfoot><tr><td>Net income</td><td th:replace="~{parts :: amount(${netIncome})}"></td></tr></tfoot>
+    </table>
+  </div>
+</main>
+</body>
+</html>

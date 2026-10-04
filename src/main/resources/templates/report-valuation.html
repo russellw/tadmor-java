@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<!--/* R8. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Inventory valuation · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1>Inventory valuation</h1></div>
+  <p class="empty" th:if="${rows.isEmpty()}">No stock movements yet.</p>
+  <div class="tablewrap" th:unless="${rows.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th>SKU</th><th>Product</th><th class="num">On hand</th><th class="num">Average cost</th><th class="num">Value</th></tr></thead>
+      <tbody><tr th:each="r : ${rows}">
+        <td><a th:href="@{'/products/' + ${r.productId()}}" th:text="${r.sku()}">W1</a></td><td th:text="${r.name()}">Widget</td>
+        <td class="num" th:text="${@fmt.qty(r.qtyOnHand())}">0</td>
+        <td th:replace="~{parts :: amount(${r.avgUnitCost()})}"></td><td th:replace="~{parts :: amount(${r.valueOnHand()})}"></td>
+      </tr></tbody>
+      <tfoot><tr><td colspan="4">Total value</td><td th:replace="~{parts :: amount(${totalValue})}"></td></tr></tfoot>
+    </table>
+  </div>
+</main>
+</body>
+</html>

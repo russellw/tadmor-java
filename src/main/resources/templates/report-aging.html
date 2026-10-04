@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!--/* R7. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${title} + ' · tadmor'">Aging · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1 th:text="${title}">AR aging</h1></div>
+  <p class="empty" th:if="${rows.isEmpty()}">Nothing is outstanding.</p>
+  <div class="tablewrap" th:unless="${rows.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th th:text="${partyLabel}">Customer</th><th class="num">Not yet due</th><th class="num">1–30</th>
+        <th class="num">31–60</th><th class="num">61–90</th><th class="num">Over 90</th><th class="num">Total</th></tr></thead>
+      <tbody><tr th:each="r : ${rows}">
+        <td><a th:href="@{'/' + ${partyPath} + '/' + ${r.partyId()}}" th:text="${r.partyName()}">Party</a></td>
+        <td th:replace="~{parts :: amount(${r.notYetDue()})}"></td><td th:replace="~{parts :: amount(${r.days130()})}"></td>
+        <td th:replace="~{parts :: amount(${r.days3160()})}"></td><td th:replace="~{parts :: amount(${r.days6190()})}"></td>
+        <td th:replace="~{parts :: amount(${r.daysOver90()})}"></td><td th:replace="~{parts :: amount(${r.totalOutstanding()})}"></td>
+      </tr></tbody>
+      <tfoot><tr><td>Total</td><th:block th:each="t : ${totals}"><td th:replace="~{parts :: amount(${t})}"></td></th:block></tr></tfoot>
+    </table>
+  </div>
+</main>
+</body>
+</html>

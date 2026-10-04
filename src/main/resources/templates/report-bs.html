@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--/* R2: the identity of domain §10 shown in the footer. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Balance sheet · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1>Balance sheet</h1></div>
+  <form th:replace="~{parts :: asof('/reports/balance-sheet', ${asOf})}"></form>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Bad date.</p>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr><th>Account</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        <th:block th:each="s : ${sections}">
+          <tr class="section"><td colspan="2" th:text="${s.title()}">Assets</td></tr>
+          <tr th:each="r : ${s.rows()}">
+            <td><a th:href="@{'/accounts/' + ${r.accountId()} + '/ledger'}" th:text="${r.code()} + ' · ' + ${r.name()}">1000</a></td>
+            <td th:replace="~{parts :: amount(${r.amount()})}"></td></tr>
+          <tr class="subtotal"><td th:text="'Total ' + ${#strings.toLowerCase(s.title())}">Total</td>
+            <td th:replace="~{parts :: amount(${s.total()})}"></td></tr>
+        </th:block>
+        <tr class="section"><td>Current earnings (not yet closed)</td>
+          <td th:replace="~{parts :: amount(${currentEarnings})}"></td></tr>
+      </tbody>
+      <tfoot>
+        <tr><td>Assets</td><td th:replace="~{parts :: amount(${sections[0].total()})}"></td></tr>
+        <tr><td>Liabilities + equity + current earnings</td><td th:replace="~{parts :: amount(${claims})}"></td></tr>
+      </tfoot>
+    </table>
+  </div>
+</main>
+</body>
+</html>

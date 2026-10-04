@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--/* S1: newest first. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Stock movements · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1>Stock movements</h1>
+    <a class="button primary" th:href="@{/stock-movements/new}">New stock movement</a></div>
+  <p class="empty" th:if="${rows.isEmpty()}">Nothing here yet.</p>
+  <div class="tablewrap" th:unless="${rows.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th>Date</th><th>Product</th><th>Warehouse</th><th>Type</th><th class="num">Quantity</th>
+        <th class="num">Unit cost</th><th class="num">Total cost</th><th>Posted</th></tr></thead>
+      <tbody><tr th:each="m : ${rows}">
+        <td><a th:href="@{'/stock-movements/' + ${m.get('id')}}" th:text="${m.get('movement_date')}">date</a></td>
+        <td th:text="${products.get('' + m.get('product_id'))}">Product</td>
+        <td th:text="${warehouses.get('' + m.get('warehouse_id'))}">Main</td>
+        <td th:text="${@fmt.words(m.get('movement_type'))}">receipt</td>
+        <td class="num" th:text="${@fmt.qty(m.get('quantity'))}">1</td>
+        <td class="num" th:text="${@fmt.amount(m.get('unit_cost'))}">0.00</td>
+        <td class="num" th:text="${@fmt.amount(m.get('total_cost'))}">0.00</td>
+        <td><span class="pill" th:classappend="'s-' + ${m.get('status')}" th:text="${m.get('status')}">draft</span></td>
+      </tr></tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

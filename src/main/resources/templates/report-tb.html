@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!--/* R4. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Trial balance · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1>Trial balance</h1></div>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr><th>Account</th><th>Type</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr></thead>
+      <tbody><tr th:each="r : ${rows}">
+        <td><a th:href="@{'/accounts/' + ${r.accountId()} + '/ledger'}" th:text="${r.code()} + ' · ' + ${r.name()}">1000</a></td>
+        <td th:text="${r.accountType()}">asset</td>
+        <td th:replace="~{parts :: amount(${r.totalDebit()})}"></td>
+        <td th:replace="~{parts :: amount(${r.totalCredit()})}"></td>
+        <td th:replace="~{parts :: amount(${r.balance()})}"></td>
+      </tr></tbody>
+      <tfoot><tr><td colspan="2">Totals</td>
+        <td th:replace="~{parts :: amount(${totalDebit})}"></td><td th:replace="~{parts :: amount(${totalCredit})}"></td>
+        <td th:replace="~{parts :: amount(${totalBalance})}"></td></tr></tfoot>
+    </table>
+  </div>
+</main>
+</body>
+</html>

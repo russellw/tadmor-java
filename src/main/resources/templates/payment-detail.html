@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--/* P3, P4. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${#strings.capitalize(screen.singular())} + ' · tadmor'">Payment · tadmor</title></head>
+<body>
+<main th:with="status=${payment.get('status')}, ccy=${payment.get('currency_code')}">
+  <div class="pagehead">
+    <h1><span th:text="${#strings.capitalize(screen.singular())} + ' #' + ${id}">Payment</span>
+      <span class="pill" th:classappend="'s-' + ${status}" th:text="${status}">draft</span></h1>
+    <div class="actions">
+      <form th:if="${status == 'draft'}" method="post" th:action="@{'/' + ${screen.path()} + '/' + ${id} + '/post'}">
+        <button class="primary">Post</button></form>
+      <a th:if="${status == 'draft'}" class="button" th:href="@{'/' + ${screen.path()} + '/' + ${id} + '/edit'}">Edit</a>
+      <form th:if="${status == 'draft'}" method="post" th:action="@{'/' + ${screen.path()} + '/' + ${id} + '/delete'}"
+            th:attr="data-confirm='Delete this ' + ${screen.singular()} + '?'"><button class="danger">Delete</button></form>
+      <form th:if="${status == 'posted' and @fmt.nonZero(payment.get('unapplied'))}" method="post"
+            th:action="@{'/' + ${screen.path()} + '/' + ${id} + '/apply'}"><button>Apply</button></form>
+      <form th:if="${status == 'posted' and currentUser.isAdmin()}" method="post"
+            th:action="@{'/' + ${screen.path()} + '/' + ${id} + '/unpost'}"
+            th:attr="data-confirm='Unpost this payment? Its applications are removed and a reversing entry is posted.'">
+        <button>Unpost</button></form>
+    </div>
+  </div>
+  <th:block th:replace="~{parts :: messages}"></th:block>
+  <div class="card">
+    <dl class="facts">
+      <dt th:text="${screen.partyLabel()}">Customer</dt>
+      <dd><a th:href="@{'/' + ${screen.partyChoices()} + '/' + ${payment.get(screen.partyField())}}" th:text="${partyName}">Party</a></dd>
+      <dt>Date</dt><dd th:text="${payment.get('payment_date')}">date</dd>
+      <dt>Amount</dt><dd th:text="${ccy} + ' ' + ${@fmt.amount(payment.get('amount'))}">0.00</dd>
+      <dt>Applied</dt><dd th:text="${ccy} + ' ' + ${@fmt.amount(payment.get('amount_applied'))}">0.00</dd>
+      <dt>Unapplied</dt><dd th:text="${ccy} + ' ' + ${@fmt.amount(payment.get('unapplied'))}">0.00</dd>
+      <dt>Method</dt><dd th:text="${payment.get('method')} ?: '—'">transfer</dd>
+      <dt th:text="${screen.accountLabel()}">Account</dt><dd th:text="${accountName} ?: '—'">1000 · Cash</dd>
+      <th:block th:if="${payment.get('reference') != null}"><dt>Reference</dt><dd th:text="${payment.get('reference')}">ref</dd></th:block>
+      <th:block th:if="${payment.get('journal_entry_id') != null}"><dt>Journal entry</dt>
+        <dd><a th:href="@{'/journal-entries/' + ${payment.get('journal_entry_id')}}" th:text="'#' + ${payment.get('journal_entry_id')}">#1</a></dd></th:block>
+    </dl>
+  </div>
+  <h2>Applied to</h2>
+  <p class="empty" th:if="${applications.isEmpty()}">Not applied to anything yet.</p>
+  <div class="tablewrap" th:unless="${applications.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th>Document</th><th class="num">Applied</th></tr></thead>
+      <tbody><tr th:each="a : ${applications}">
+        <td><a th:href="@{'/' + ${screen.documents()} + '/' + ${a.documentId()}}" th:text="${a.documentNumber()}">INV-1</a></td>
+        <td class="num" th:text="${ccy} + ' ' + ${@fmt.amount(a.amountApplied())}">0.00</td>
+      </tr></tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

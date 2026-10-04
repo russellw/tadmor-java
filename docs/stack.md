@@ -218,6 +218,21 @@ One pgjdbc trap is worth recording: pgjdbc sends string parameters as
 Queries on citext columns (emails) therefore cast the parameter
 (`email = ?::citext`), which tadmor's driver never needed.
 
+## The user interface
+
+Server-rendered Thymeleaf pages over the same services as the JSON API, so
+the UI enforces exactly the API's rules and shows the server's messages
+(`spec/domain.md` §13 G5). Records convert to and from the API's snake_case
+JSON shapes through the same Jackson configuration, so templates and forms
+use the spec's field names, and simple record types share one generic list
+and form (`ui/Resources`). One stylesheet and one handwritten script,
+`app.js`, both adapted from tadmor-python's: the script is the line editor
+(adding lines, filling them from products and tax codes, and previewing
+totals with exact BigInt decimals rounded as the server does) and the
+delete confirmations. A same-origin Content Security Policy forbids inline
+script and style. Administrator actions are gated in `SecurityConfig`, the
+UI's paths mirroring the API's, so templates only hide them.
+
 ## Printing
 
 tadmor writes its PDFs by hand with the standard-14 Helvetica fonts, so no

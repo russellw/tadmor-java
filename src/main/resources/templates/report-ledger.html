@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--/* R5: running balance in base; foreign lines show their currency and base amounts. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="'Ledger ' + ${account.code()} + ' · tadmor'">Ledger · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1 th:text="'Ledger: ' + ${account.code()} + ' · ' + ${account.name()}">Ledger</h1>
+    <a class="button" th:href="@{'/accounts/' + ${account.id()}}">Account</a></div>
+  <form th:replace="~{parts :: range('/accounts/' + ${account.id()} + '/ledger', ${from}, ${to})}"></form>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Bad date.</p>
+  <p class="empty" th:if="${lines.isEmpty()}">No posted lines in this range.</p>
+  <div class="tablewrap" th:unless="${lines.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th>Date</th><th>Entry</th><th>Reference</th><th>Memo</th>
+        <th th:if="${anyForeign}">Currency</th><th class="num">Debit</th><th class="num">Credit</th>
+        <th class="num" th:if="${anyForeign}" th:text="'Debit (' + ${base} + ')'">Base debit</th>
+        <th class="num" th:if="${anyForeign}" th:text="'Credit (' + ${base} + ')'">Base credit</th>
+        <th class="num" th:text="'Balance (' + ${base} + ')'">Balance</th></tr></thead>
+      <tbody><tr th:each="l : ${lines}" th:with="r=${l.row()}">
+        <td th:text="${r.entryDate()}">date</td>
+        <td><a th:href="@{'/journal-entries/' + ${r.journalEntryId()}}" th:text="'#' + ${r.journalEntryId()}">#1</a></td>
+        <td th:text="${r.reference()}">ref</td><td th:text="${r.memo()}">memo</td>
+        <td th:if="${anyForeign}" th:text="${r.currencyCode()}">USD</td>
+        <td th:replace="~{parts :: amount(${r.debit()})}"></td><td th:replace="~{parts :: amount(${r.credit()})}"></td>
+        <th:block th:if="${anyForeign}"><td th:replace="~{parts :: amount(${r.baseDebit()})}"></td>
+          <td th:replace="~{parts :: amount(${r.baseCredit()})}"></td></th:block>
+        <td th:replace="~{parts :: amount(${l.balance()})}"></td>
+      </tr></tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!--/* A4. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Bank statements · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1>Bank statements</h1>
+    <a class="button primary" th:href="@{/bank-statements/new}">New bank statement</a></div>
+  <p class="empty" th:if="${rows.isEmpty()}">Nothing here yet.</p>
+  <div class="tablewrap" th:unless="${rows.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th>Account</th><th>Date</th><th>Reference</th><th class="num">Closing balance</th>
+        <th class="num">Matched</th><th class="num">Difference</th><th>Status</th></tr></thead>
+      <tbody><tr th:each="s : ${rows}">
+        <td><a th:href="@{'/bank-statements/' + ${s.id()}}" th:text="${s.accountCode()} + ' · ' + ${s.accountName()}">1000</a></td>
+        <td th:text="${s.statementDate()}">date</td><td th:text="${s.reference()}">ref</td>
+        <td class="num" th:text="${@fmt.amount(s.closingBalance())}">0.00</td>
+        <td class="num" th:text="${s.matchedCount()} + ' of ' + ${s.lineCount()}">0 of 0</td>
+        <td th:replace="~{parts :: amount(${s.difference()})}"></td>
+        <td><span class="pill" th:classappend="'s-' + ${s.status()}" th:text="${s.status()}">open</span></td>
+      </tr></tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

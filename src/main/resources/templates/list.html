@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--/* The generic list of a simple record type (ResourceUi): each row opens its form (spec/domain.md §13). */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${resource.title()} + ' · tadmor'">List · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead">
+    <h1 th:text="${resource.title()}">Things</h1>
+    <a class="button primary" th:href="@{'/' + ${resource.path()} + '/new'}" th:text="'New ' + ${resource.singular()}">New</a>
+  </div>
+  <p class="empty" th:if="${rows.isEmpty()}">Nothing here yet.</p>
+  <div class="tablewrap" th:unless="${rows.isEmpty()}">
+    <table class="grid">
+      <thead><tr>
+        <th th:each="c : ${resource.columns()}" th:text="${c.label()}"
+            th:classappend="${c.kind() == 'amount' or c.kind() == 'qty'} ? 'num'">Column</th>
+        <th th:if="${resource.extra() != null or resource.deletable()}"></th>
+      </tr></thead>
+      <tbody>
+      <tr th:each="row, it : ${rows}">
+        <td th:each="c, ci : ${resource.columns()}" th:with="v=${row.values().get(c.key())}"
+            th:classappend="${c.kind() == 'amount' or c.kind() == 'qty'} ? 'num'">
+          <a th:if="${ci.first}" th:href="@{'/' + ${resource.path()} + '/' + ${row.key()}}"
+             th:text="${c.kind() == 'ref'} ? ${labels.get(c.key()).get('' + v)} : ${v}">value</a>
+          <th:block th:unless="${ci.first}" th:switch="${c.kind()}">
+            <span th:case="'amount'" th:text="${@fmt.amount(v)}"></span>
+            <span th:case="'qty'" th:text="${@fmt.qty(v)}"></span>
+            <span th:case="'bool'" th:text="${@fmt.bool(v)}" th:classappend="${v == false} ? 'muted'"></span>
+            <span th:case="'ref'" th:text="${v == null} ? '' : ${labels.get(c.key()).get('' + v)}"></span>
+            <span th:case="*" th:text="${v}"></span>
+          </th:block>
+        </td>
+        <td th:if="${resource.extra() != null or resource.deletable()}" class="actions">
+          <a th:if="${resource.extra() != null}" th:href="@{'/' + ${resource.path()} + '/' + ${row.key()} + ${resource.extra().suffix()}}"
+             th:text="${resource.extra().label()}">Extra</a>
+          <form th:if="${resource.deletable()}" method="post" th:action="@{'/' + ${resource.path()} + '/' + ${row.key()} + '/delete'}"
+                th:attr="data-confirm='Delete this ' + ${resource.singular()} + '?'">
+            <button class="link">Delete</button></form>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

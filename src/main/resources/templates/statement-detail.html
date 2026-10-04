@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!--/* A5. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Bank statement · tadmor</title></head>
+<body>
+<main th:with="open=${s.status() == 'open'}, base=${'/bank-statements/' + s.id()}">
+  <div class="pagehead">
+    <h1><span th:text="'Statement ' + (${s.reference()} ?: '#' + ${s.id()})">Statement</span>
+      <span class="pill" th:classappend="'s-' + ${s.status()}" th:text="${s.status()}">open</span></h1>
+    <div class="actions">
+      <form th:if="${open}" method="post" th:action="@{${base} + '/auto-match'}"><button>Auto-match</button></form>
+      <form th:if="${open}" method="post" th:action="@{${base} + '/reconcile'}"><button class="primary">Reconcile</button></form>
+      <a th:if="${open}" class="button" th:href="@{${base} + '/edit'}">Edit</a>
+      <form th:if="${open}" method="post" th:action="@{${base} + '/delete'}" data-confirm="Delete this statement and its lines?">
+        <button class="danger">Delete</button></form>
+      <form th:if="${!open and currentUser.isAdmin()}" method="post" th:action="@{${base} + '/reopen'}"
+            data-confirm="Reopen this reconciled statement?"><button>Reopen</button></form>
+    </div>
+  </div>
+  <th:block th:replace="~{parts :: messages}"></th:block>
+  <div class="card">
+    <dl class="facts">
+      <dt>Account</dt><dd th:text="${s.accountCode()} + ' · ' + ${s.accountName()}">1000 · Cash</dd>
+      <dt>Statement date</dt><dd th:text="${s.statementDate()}">date</dd>
+      <dt>Opening balance</dt><dd th:text="${@fmt.amount(s.openingBalance())}">0.00</dd>
+      <dt>Lines total</dt><dd th:text="${@fmt.amount(s.linesTotal())}">0.00</dd>
+      <dt>Closing balance</dt><dd th:text="${@fmt.amount(s.closingBalance())}">0.00</dd>
+      <dt>Difference</dt><dd th:classappend="${@fmt.nonZero(s.difference())} ? 'neg'" th:text="${@fmt.amount(s.difference())}">0.00</dd>
+      <dt>Matched</dt><dd th:text="${s.matchedCount()} + ' of ' + ${s.lineCount()}">0 of 0</dd>
+    </dl>
+  </div>
+
+  <h2>Lines</h2>
+  <p th:if="${open}" class="small">
+    <a th:unless="${all}" th:href="@{${base}(all=true)}">Offer every candidate for each line</a>
+    <a th:if="${all}" th:href="@{${base}}">Offer only candidates of each line's amount</a></p>
+  <p class="empty" th:if="${lines.isEmpty()}">No lines yet.</p>
+  <div class="tablewrap" th:unless="${lines.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th>#</th><th>Date</th><th>Description</th><th>Reference</th><th class="num">Amount</th><th>Match</th><th></th></tr></thead>
+      <tbody><tr th:each="l : ${lines}">
+        <td th:text="${l.lineNo()}">1</td><td th:text="${l.txnDate()}">date</td><td th:text="${l.description()}">Deposit</td>
+        <td th:text="${l.reference()}">ref</td>
+        <td th:replace="~{parts :: amount(${l.amount()})}"></td>
+        <td th:if="${l.journalLineId() != null}">
+          <a th:href="@{'/journal-entries/' + ${l.journalEntryId()}}" th:text="'#' + ${l.journalEntryId()}">#1</a>
+          <span class="muted small" th:text="${l.entryDate()} + ' ' + (${l.entryMemo()} ?: '')">date memo</span>
+          <form th:if="${open}" class="inline" method="post" th:action="@{${base} + '/lines/' + ${l.id()} + '/unmatch'}">
+            <button class="link">Unmatch</button></form>
+        </td>
+        <td th:if="${l.journalLineId() == null}">
+          <form th:if="${open}" class="actions" method="post" th:action="@{${base} + '/lines/' + ${l.id()} + '/match'}"
+                th:with="offered=${offers.get(l.id())}">
+            <select name="journal_line_id" class="auto" th:aria-label="'Candidates for line ' + ${l.lineNo()}">
+              <option value="" th:text="${offered.isEmpty()} ? 'No candidates' : 'Choose a journal line'">Choose</option>
+              <option th:each="c : ${offered}" th:value="${c.journalLineId()}"
+                      th:text="${c.entryDate()} + ' · #' + ${c.journalEntryId()} + ' · ' + ${@fmt.amount(c.amount())} + ' · ' + (${c.memo()} ?: '')">candidate</option>
+            </select>
+            <button th:disabled="${offered.isEmpty()}">Match</button>
+          </form>
+          <span th:unless="${open}" class="muted">Unmatched</span>
+        </td>
+        <td><form th:if="${open}" method="post" th:action="@{${base} + '/lines/' + ${l.id()} + '/delete'}"
+                  data-confirm="Delete this line?"><button class="link">Delete</button></form></td>
+      </tr></tbody>
+    </table>
+  </div>
+
+  <div class="columns mt" th:if="${open}">
+    <form class="form card" method="post" th:action="@{${base} + '/lines'}">
+      <h2 class="mt-0">Add a line</h2>
+      <label class="field"><span>Date</span><input type="date" name="txn_date" required></label>
+      <label class="field"><span>Description</span><input name="description" required></label>
+      <label class="field"><span>Reference</span><input name="reference"></label>
+      <label class="field"><span>Amount (deposits positive)</span><input name="amount" class="num" inputmode="decimal" required></label>
+      <div class="actions"><button type="submit">Add line</button></div>
+    </form>
+    <form class="form card" method="post" th:action="@{${base} + '/import'}">
+      <h2 class="mt-0">Import CSV</h2>
+      <label class="field"><span>Paste date,description,amount[,reference] rows; a header row is skipped</span>
+        <textarea name="csv" rows="8" required></textarea></label>
+      <div class="actions"><button type="submit">Import</button></div>
+    </form>
+  </div>
+</main>
+</body>
+</html>

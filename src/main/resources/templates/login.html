@@ -4,15 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sign in · tadmor</title>
+  <link rel="stylesheet" th:href="@{/app.css}">
 </head>
 <body>
-<main>
-  <h1>Sign in to tadmor</h1>
-  <p th:if="${error}" th:text="${error}" role="alert">Invalid email or password.</p>
-  <form th:action="@{/login}" method="post">
-    <label>Email <input type="email" name="email" th:value="${email}" autocomplete="username" required autofocus></label>
-    <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
-    <button type="submit">Sign in</button>
+<main class="bare">
+  <form class="card login" th:action="@{/login}" method="post">
+    <h1>Sign in to tadmor</h1>
+    <p class="error" th:if="${error}" th:text="${error}" role="alert">Invalid email or password.</p>
+    <label class="field"><span>Email</span>
+      <input type="email" name="email" th:value="${email}" autocomplete="username" required autofocus></label>
+    <label class="field"><span>Password</span>
+      <input type="password" name="password" autocomplete="current-password" required></label>
+    <button type="submit" class="primary">Sign in</button>
   </form>
 </main>
 </body>

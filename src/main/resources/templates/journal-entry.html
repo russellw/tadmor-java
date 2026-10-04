@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<!--/* R6. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="'Journal entry #' + ${e.id()} + ' · tadmor'">Journal entry · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1><span th:text="'Journal entry #' + ${e.id()}">Journal entry</span>
+    <span class="pill" th:classappend="'s-' + ${e.status()}" th:text="${e.status()}">posted</span></h1></div>
+  <div class="card">
+    <dl class="facts">
+      <dt>Date</dt><dd th:text="${e.entryDate()}">date</dd>
+      <dt>Currency</dt><dd th:text="${e.currencyCode()}">USD</dd>
+      <dt>Exchange rate</dt><dd th:text="${@fmt.qty(e.exchangeRate())}">1</dd>
+      <dt>Reference</dt><dd th:text="${e.reference()} ?: '—'">ref</dd>
+      <dt>Memo</dt><dd th:text="${e.memo()} ?: '—'">memo</dd>
+    </dl>
+  </div>
+  <h2>Lines</h2>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr><th>#</th><th>Account</th><th>Memo</th>
+        <th class="num" th:text="'Debit (' + ${e.currencyCode()} + ')'">Debit</th><th class="num" th:text="'Credit (' + ${e.currencyCode()} + ')'">Credit</th>
+        <th class="num" th:text="'Debit (' + ${base} + ')'">Base debit</th><th class="num" th:text="'Credit (' + ${base} + ')'">Base credit</th></tr></thead>
+      <tbody><tr th:each="l : ${e.lines()}">
+        <td th:text="${l.lineNo()}">1</td>
+        <td><a th:href="@{'/accounts/' + ${l.accountId()} + '/ledger'}" th:text="${l.accountCode()} + ' · ' + ${l.accountName()}">1000</a></td>
+        <td th:text="${l.memo()}">memo</td>
+        <td th:replace="~{parts :: amount(${l.debit()})}"></td><td th:replace="~{parts :: amount(${l.credit()})}"></td>
+        <td th:replace="~{parts :: amount(${l.baseDebit()})}"></td><td th:replace="~{parts :: amount(${l.baseCredit()})}"></td>
+      </tr></tbody>
+      <tfoot><tr><td colspan="3">Totals</td>
+        <td th:replace="~{parts :: amount(${totals.get('debit')})}"></td><td th:replace="~{parts :: amount(${totals.get('credit')})}"></td>
+        <td th:replace="~{parts :: amount(${totals.get('baseDebit')})}"></td><td th:replace="~{parts :: amount(${totals.get('baseCredit')})}"></td></tr></tfoot>
+    </table>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--/* O5, O6: invoice or bill an order into a draft document, or ship or receive it into draft movements. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${#strings.capitalize(verb)} + ' ' + ${order.get('order_number')} + ' · tadmor'">Fulfil · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead">
+    <h1 th:text="${#strings.capitalize(verb)} + ' ' + ${screen.singular} + ' ' + ${order.get('order_number')}">Invoice order</h1>
+    <a class="button" th:href="@{'/' + ${screen.path} + '/' + ${id}}">Back to the order</a>
+  </div>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Refused.</p>
+  <form class="form wide" method="post" th:action="@{'/' + ${screen.path} + '/' + ${id} + '/' + ${verb}}">
+    <div class="card columns">
+      <label class="field" th:if="${document}"><span>Number</span><span class="req">required</span>
+        <input th:name="${numberField}" th:value="${values.get(numberField)}"></label>
+      <label class="field" th:unless="${document}"><span>Warehouse</span><span class="req">required</span>
+        <select name="warehouse_id">
+          <option value="">—</option>
+          <option th:each="o : ${@choices.of('warehouses')}" th:if="${o.active()}" th:value="${o.value()}"
+                  th:text="${o.label()}" th:selected="${o.value() == values.get('warehouse_id')}">Main</option>
+        </select></label>
+      <label class="field"><span>Date</span>
+        <input type="date" th:name="${dateField}" th:value="${values.get(dateField)}"></label>
+      <label class="field" th:if="${document}"><span>Due date</span>
+        <input type="date" name="due_date" th:value="${values.get('due_date')}"></label>
+      <label class="field" th:unless="${document}"><span>Reference</span>
+        <input name="reference" th:value="${values.get('reference')}"></label>
+    </div>
+    <p class="muted" th:unless="${document}">Only stocked lines with something left are offered.</p>
+    <div class="tablewrap">
+      <table class="grid lines">
+        <thead><tr><th>#</th><th>Description</th><th class="num">Remaining</th><th class="num">Quantity</th></tr></thead>
+        <tbody><tr th:each="l : ${outstanding}" th:with="lid=${'' + l.get('order_line_id')}">
+          <td th:text="${l.get('line_no')}">1</td><td th:text="${l.get('description')}">Item</td>
+          <td class="num" th:text="${@fmt.qty(l.get(remaining))}">1</td>
+          <td><input type="hidden" name="f_line_id" th:value="${lid}">
+            <input name="f_quantity" class="num narrow" inputmode="decimal" th:aria-label="'Quantity for line ' + ${l.get('line_no')}"
+                   th:value="${requested.containsKey(lid)} ? ${requested.get(lid)} : ${@fmt.qty(l.get(remaining))}"></td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div class="actions" th:unless="${outstanding.isEmpty()}">
+      <button type="submit" class="primary" th:text="${#strings.capitalize(verb)}">Invoice</button></div>
+  </form>
+</main>
+</body>
+</html>

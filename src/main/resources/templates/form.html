@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!--/* The generic form of a simple record type (ResourceUi), and the ledger settings. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${title} + ' · tadmor'">Form · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1 th:text="${title}">Edit</h1></div>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Refused.</p>
+  <p class="muted" th:unless="${editable}">Only an administrator can change these.</p>
+  <form class="form card" method="post" th:action="@{${action}}">
+    <th:block th:each="f : ${resource.fields()}" th:if="${f.shownOn(creating)}"
+              th:with="v=${values.get(f.name())}, locked=${f.readOnlyOn(creating) or !editable}">
+      <label class="field check" th:if="${f.kind() == 'checkbox'}">
+        <input type="checkbox" th:name="${f.name()}" value="true" th:checked="${v == true}" th:disabled="${!editable}">
+        <span th:text="${f.label()}">Flag</span>
+      </label>
+      <label class="field" th:if="${f.kind() == 'select'}">
+        <span th:text="${f.label()}">Pick</span><span class="req" th:if="${f.required()}">required</span>
+        <select th:name="${f.name()}" th:disabled="${locked}">
+          <option value="">—</option>
+          <option th:each="o : ${@choices.of(f.choices())}"
+                  th:if="${(o.active() or o.value() == '' + v) and !(f.name() == 'parent_id' and o.value() == key)}"
+                  th:value="${o.value()}" th:text="${o.label()}" th:selected="${o.value() == '' + v}">Option</option>
+        </select>
+        <input type="hidden" th:if="${locked and editable}" th:name="${f.name()}" th:value="${v}">
+      </label>
+      <label class="field" th:if="${f.kind() == 'textarea'}">
+        <span th:text="${f.label()}">Text</span>
+        <textarea th:name="${f.name()}" th:text="${v}" rows="3" th:readonly="${locked}"></textarea>
+      </label>
+      <label class="field" th:unless="${f.kind() == 'checkbox' or f.kind() == 'select' or f.kind() == 'textarea'}">
+        <span th:text="${f.label()}">Value</span><span class="req" th:if="${f.required()}">required</span>
+        <input th:name="${f.name()}" th:value="${v}" th:readonly="${locked}"
+               th:type="${f.kind() == 'decimal' or f.kind() == 'integer'} ? 'text' : ${f.kind()}"
+               th:classappend="${f.kind() == 'decimal' or f.kind() == 'integer'} ? 'num'"
+               th:attr="inputmode=${f.kind() == 'decimal'} ? 'decimal' : (${f.kind() == 'integer'} ? 'numeric' : null)">
+      </label>
+    </th:block>
+    <div class="actions" th:if="${editable}">
+      <button type="submit" class="primary">Save</button>
+      <a class="button" th:if="${cancel}" th:href="@{${cancel}}">Cancel</a>
+    </div>
+  </form>
+  <form th:if="${!creating and resource.deletable()}" class="mt" method="post" th:action="@{${action} + '/delete'}"
+        th:attr="data-confirm='Delete this ' + ${resource.singular()} + '?'">
+    <button class="danger">Delete</button>
+  </form>
+</main>
+</body>
+</html>

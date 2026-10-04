@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--/* P1: newest first. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${screen.title()} + ' · tadmor'">Payments · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead">
+    <h1 th:text="${screen.title()}">Payments</h1>
+    <a class="button primary" th:href="@{'/' + ${screen.path()} + '/new'}" th:text="'New ' + ${screen.singular()}">New</a>
+  </div>
+  <p class="empty" th:if="${rows.isEmpty()}">Nothing here yet.</p>
+  <div class="tablewrap" th:unless="${rows.isEmpty()}">
+    <table class="grid">
+      <thead><tr><th th:text="${screen.partyLabel()}">Party</th><th>Date</th><th>Method</th><th class="num">Amount</th>
+        <th class="num">Applied</th><th class="num">Unapplied</th><th>Status</th></tr></thead>
+      <tbody><tr th:each="p : ${rows}">
+        <td><a th:href="@{'/' + ${screen.path()} + '/' + ${p.get('id')}}" th:text="${parties.get('' + p.get(screen.partyField()))}">Party</a></td>
+        <td th:text="${p.get('payment_date')}">date</td><td th:text="${p.get('method')}">transfer</td>
+        <td class="num" th:text="${p.get('currency_code')} + ' ' + ${@fmt.amount(p.get('amount'))}">0.00</td>
+        <td class="num" th:text="${@fmt.amount(p.get('amount_applied'))}">0.00</td>
+        <td class="num" th:text="${@fmt.amount(p.get('unapplied'))}">0.00</td>
+        <td><span class="pill" th:classappend="'s-' + ${p.get('status')}" th:text="${p.get('status')}">draft</span></td>
+      </tr></tbody>
+    </table>
+  </div>
+</main>
+</body>
+</html>

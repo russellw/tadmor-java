@@ -13,8 +13,9 @@ UI, and has the users, master data, calendar, and settings APIs, and
 invoices, bills, credit notes, and payments with posting and settlement,
 orders and stock movements, the financial reports, year-end close, bank
 reconciliation, and printing and email: the JSON API is complete, and
-`make conformance` passes all 35 of its cases. The rest of the UI
-(spec/domain.md §13) is still to come.
+`make conformance` passes all 35 of its cases. The server-rendered UI covers
+the checklist of spec/domain.md §13; see [`docs/ui-coverage.md`](docs/ui-coverage.md)
+for how each item was checked, and what still wants a browser walk-through.
 
 ## Layout
 
@@ -25,10 +26,12 @@ src/main/java/com/belunaro/tadmor/
   security/        Spring Security: credentials, sessions, the filter chain
   service/         business rules, shared by the JSON API and the UI
   api/             the JSON API of spec/api.md
-  ui/              the server-rendered UI of spec/domain.md §13
+  ui/              the server-rendered UI of spec/domain.md §13: generic lists and forms
+                   for simple records (Resources), and screens for the rest
   printing/        a minimal PDF writer and the printed-document layout
   web/             probes and the error page, shared by both
-src/main/resources/   application.properties, Thymeleaf templates
+src/main/resources/   application.properties, Thymeleaf templates, app.css, and app.js
+                   (the one handwritten script: line editor and confirmations)
 src/test/java/     JUnit tests (integration tests use TEST_DATABASE_URL)
 spec/, conformance/, db/migrations/   copied from tadmor (spec/UPSTREAM); never edited here
 vendor/            the Maven repository the build resolves, committed (vendor/lock.txt)

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!--/* Fragments several screens share. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--/* D6, D7, O7: the PDF opens in a new tab; email to the given recipients, blank meaning the counterparty's address. */-->
+<section th:fragment="print(path, id)" class="card mt">
+  <div class="actions">
+    <a class="button" th:href="@{'/api/' + ${path} + '/' + ${id} + '/pdf'}" target="_blank" rel="noopener">PDF</a>
+    <form method="post" class="actions" th:action="@{'/' + ${path} + '/' + ${id} + '/email'}">
+      <input name="to" class="wide-input" placeholder="Recipients (blank: the counterparty's email on file)"
+             aria-label="Email recipients">
+      <button type="submit">Email PDF</button>
+    </form>
+  </div>
+</section>
+
+<!--/* A message after an action: the refusal, or what happened. */-->
+<th:block th:fragment="messages">
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Refused.</p>
+  <p class="notice" role="status" th:if="${notice}" th:text="${notice}">Done.</p>
+</th:block>
+
+<!--/* Report filters: a date range, or a single as-of date; blank bounds are unbounded. */-->
+<form th:fragment="range(action, from, to)" class="filters" method="get" th:action="@{${action}}">
+  <label>From <input type="date" name="from" th:value="${from}"></label>
+  <label>To <input type="date" name="to" th:value="${to}"></label>
+  <button type="submit">Show</button>
+</form>
+<form th:fragment="asof(action, asOf)" class="filters" method="get" th:action="@{${action}}">
+  <label>As of <input type="date" name="as_of" th:value="${asOf}"></label>
+  <button type="submit">Show</button>
+</form>
+
+<!--/* An amount cell, red when negative. */-->
+<td th:fragment="amount(v)" class="num" th:classappend="${@fmt.negative(v)} ? 'neg'" th:text="${@fmt.amount(v)}">0.00</td>
+
+</body>
+</html>

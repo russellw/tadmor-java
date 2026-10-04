@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!--/* S3. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Stock movement · tadmor</title></head>
+<body>
+<main th:with="posted=${m.get('journal_entry_id') != null}, type=${m.get('movement_type')},
+               postable=${type == 'receipt' or type == 'issue'}">
+  <div class="pagehead">
+    <h1><span th:text="'Stock movement #' + ${id}">Stock movement</span>
+      <span class="pill" th:classappend="'s-' + ${m.get('status')}" th:text="${m.get('status')}">draft</span></h1>
+    <div class="actions">
+      <form th:if="${!posted and type == 'issue'}" method="post" th:action="@{'/stock-movements/' + ${id} + '/post'}">
+        <button class="primary">Post</button></form>
+      <form th:if="${!posted and type == 'receipt'}" method="post" class="actions" th:action="@{'/stock-movements/' + ${id} + '/post'}">
+        <select name="credit_account_id" class="auto" aria-label="Account to credit">
+          <option th:each="o : ${@choices.of('postable-accounts')}" th:if="${o.active()}" th:value="${o.value()}"
+                  th:text="'Credit ' + ${o.label()}" th:selected="${o.value() == grni}">Credit 2150</option>
+        </select>
+        <button class="primary">Post</button></form>
+      <a th:if="${!posted and m.get('source_type') == null}" class="button" th:href="@{'/stock-movements/' + ${id} + '/edit'}">Edit</a>
+      <form th:if="${!posted}" method="post" th:action="@{'/stock-movements/' + ${id} + '/delete'}"
+            data-confirm="Delete this stock movement?"><button class="danger">Delete</button></form>
+      <form th:if="${posted and currentUser.isAdmin()}" method="post" th:action="@{'/stock-movements/' + ${id} + '/unpost'}"
+            data-confirm="Unpost this movement? A reversing entry is posted; the quantity stays."><button>Unpost</button></form>
+    </div>
+  </div>
+  <th:block th:replace="~{parts :: messages}"></th:block>
+  <p class="muted" th:if="${!posted and !postable}">Only receipts and issues post to the ledger.</p>
+  <div class="card">
+    <dl class="facts">
+      <dt>Product</dt><dd><a th:href="@{'/products/' + ${m.get('product_id')}}" th:text="${productName}">Product</a></dd>
+      <dt>Warehouse</dt><dd th:text="${warehouseName}">Main</dd>
+      <dt>Type</dt><dd th:text="${@fmt.words(type)}">receipt</dd>
+      <dt>Date</dt><dd th:text="${m.get('movement_date')}">date</dd>
+      <dt>Quantity</dt><dd th:text="${@fmt.qty(m.get('quantity'))}">1</dd>
+      <dt>Unit cost</dt><dd th:text="${@fmt.amount(m.get('unit_cost'))}">0.00</dd>
+      <dt>Total cost</dt><dd th:text="${@fmt.amount(m.get('total_cost'))}">0.00</dd>
+      <th:block th:if="${m.get('source_type') != null}"><dt>From</dt><dd th:text="${@fmt.words(m.get('source_type'))}">order line</dd></th:block>
+      <th:block th:if="${m.get('reference') != null}"><dt>Reference</dt><dd th:text="${m.get('reference')}">ref</dd></th:block>
+      <th:block th:if="${m.get('notes') != null}"><dt>Notes</dt><dd th:text="${m.get('notes')}">notes</dd></th:block>
+      <th:block th:if="${posted}"><dt>Journal entry</dt>
+        <dd><a th:href="@{'/journal-entries/' + ${m.get('journal_entry_id')}}" th:text="'#' + ${m.get('journal_entry_id')}">#1</a></dd></th:block>
+    </dl>
+  </div>
+</main>
+</body>
+</html>

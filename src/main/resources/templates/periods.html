@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!--/* A1, A2: fiscal years with their periods; each period closes or reopens in one step. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Periods and year-end · tadmor</title></head>
+<body>
+<main th:with="admin=${currentUser.isAdmin()}">
+  <div class="pagehead"><h1>Periods and year-end</h1>
+    <div class="actions"><a class="button primary" th:href="@{/fiscal-years/new}">New fiscal year</a>
+      <a class="button" th:href="@{/accounting-periods/new}">New period</a></div></div>
+  <th:block th:replace="~{parts :: messages}"></th:block>
+  <p class="empty" th:if="${years.isEmpty()}">No fiscal years yet.</p>
+  <section th:each="y : ${years}" class="mb-l" th:with="fy=${y.year()}">
+    <h2><span th:text="${fy.name()}">FY2026</span>
+      <span class="muted plain small" th:text="${fy.startDate()} + ' to ' + ${fy.endDate()}">dates</span>
+      <span class="pill" th:classappend="'s-' + ${fy.status()}" th:text="${fy.status()}">open</span></h2>
+    <div class="actions mb">
+      <a th:href="@{'/fiscal-years/' + ${fy.id()} + '/edit'}">Edit</a>
+      <a th:if="${admin and fy.status() == 'open'}" th:href="@{'/year-end/' + ${fy.id()} + '/close'}">Close the year…</a>
+      <form th:if="${admin and y.reopenable()}" method="post" th:action="@{'/year-end/' + ${fy.id()} + '/reopen'}"
+            data-confirm="Reopen this year? Its closing entry is reversed.">
+        <button class="link">Reopen the year</button></form>
+    </div>
+    <p class="empty" th:if="${y.periods().isEmpty()}">No periods yet; posting creates monthly ones as needed.</p>
+    <div class="tablewrap" th:unless="${y.periods().isEmpty()}">
+      <table class="grid">
+        <thead><tr><th>Period</th><th>Start</th><th>End</th><th>Status</th><th></th></tr></thead>
+        <tbody><tr th:each="p : ${y.periods()}">
+          <td><a th:href="@{'/accounting-periods/' + ${p.id()} + '/edit'}" th:text="${p.name()}">2026-01</a></td>
+          <td th:text="${p.startDate()}">start</td><td th:text="${p.endDate()}">end</td>
+          <td><span class="pill" th:classappend="'s-' + ${p.status()}" th:text="${p.status()}">open</span></td>
+          <td><form method="post" th:action="@{'/accounting-periods/' + ${p.id()} + '/toggle'}">
+            <button class="link" th:text="${p.status() == 'open'} ? 'Close' : 'Reopen'">Close</button></form></td>
+        </tr></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!--/* O3, O4, O7: an order, its fulfilment per line, and what its state allows. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="${screen.singular} + ' ' + ${doc.get('order_number')} + ' · tadmor'">Order · tadmor</title></head>
+<body>
+<main th:with="status=${doc.get('status')}, ccy=${doc.get('currency_code')},
+               docStatus=${doc.get(screen.sales ? 'invoiced_status' : 'billed_status')},
+               stockStatus=${doc.get(screen.sales ? 'shipped_status' : 'received_status')}">
+  <div class="pagehead">
+    <h1><span th:text="${#strings.capitalize(screen.singular)} + ' ' + ${doc.get('order_number')}">Order 1</span>
+      <span class="pill" th:classappend="'s-' + ${status}" th:text="${status}">draft</span></h1>
+    <div class="actions">
+      <form th:if="${status == 'draft'}" method="post" th:action="@{'/' + ${screen.path} + '/' + ${id} + '/confirm'}">
+        <button class="primary">Confirm</button></form>
+      <a th:if="${status == 'draft'}" class="button" th:href="@{'/' + ${screen.path} + '/' + ${id} + '/edit'}">Edit</a>
+      <form th:if="${status == 'draft'}" method="post" th:action="@{'/' + ${screen.path} + '/' + ${id} + '/delete'}"
+            th:attr="data-confirm='Delete this ' + ${screen.singular} + '?'"><button class="danger">Delete</button></form>
+      <a th:if="${status == 'open'}" class="button primary" th:href="@{'/' + ${screen.path} + '/' + ${id} + '/' + ${screen.documentVerb}}"
+         th:text="${#strings.capitalize(screen.documentVerb)}">Invoice</a>
+      <a th:if="${status == 'open'}" class="button" th:href="@{'/' + ${screen.path} + '/' + ${id} + '/' + ${screen.stockVerb}}"
+         th:text="${#strings.capitalize(screen.stockVerb)}">Ship</a>
+      <form th:if="${status == 'open'}" method="post" th:action="@{'/' + ${screen.path} + '/' + ${id} + '/close'}"
+            th:attr="data-confirm='Close this order? It will take no more fulfilment.'"><button>Close</button></form>
+      <form th:if="${status == 'draft' or (status == 'open' and docStatus == 'none' and stockStatus == 'none')}" method="post"
+            th:action="@{'/' + ${screen.path} + '/' + ${id} + '/cancel'}"
+            th:attr="data-confirm='Cancel this ' + ${screen.singular} + '?'"><button>Cancel order</button></form>
+    </div>
+  </div>
+  <th:block th:replace="~{parts :: messages}"></th:block>
+  <ul class="plainlist" th:if="${movements != null}">
+    <li th:each="m : ${movements}"><a th:href="@{'/stock-movements/' + ${m}}" th:text="'Stock movement #' + ${m}">#1</a></li>
+  </ul>
+
+  <div class="card">
+    <dl class="facts">
+      <dt th:text="${screen.partyLabel}">Customer</dt>
+      <dd><a th:href="@{'/' + ${screen.partyChoices} + '/' + ${doc.get(screen.partyField)}}" th:text="${partyName}">Party</a></dd>
+      <dt>Order date</dt><dd th:text="${doc.get('order_date')}">date</dd>
+      <dt th:text="${screen.dueLabel}">Expected</dt><dd th:text="${doc.get(screen.dueField)}">date</dd>
+      <dt>Currency</dt><dd th:text="${ccy}">USD</dd>
+      <dt>Total</dt><dd th:text="${ccy} + ' ' + ${@fmt.amount(doc.get('total'))}">0.00</dd>
+      <dt th:text="${screen.sales} ? 'Invoiced' : 'Billed'">Invoiced</dt>
+      <dd><span class="pill" th:classappend="'s-' + ${docStatus}" th:text="${docStatus}">none</span></dd>
+      <dt th:text="${screen.sales} ? 'Shipped' : 'Received'">Shipped</dt>
+      <dd><span class="pill" th:classappend="'s-' + ${stockStatus}" th:text="${stockStatus}">none</span></dd>
+      <th:block th:if="${doc.get('reference') != null}"><dt>Reference</dt><dd th:text="${doc.get('reference')}">ref</dd></th:block>
+      <th:block th:if="${doc.get('memo') != null}"><dt>Memo</dt><dd th:text="${doc.get('memo')}">memo</dd></th:block>
+    </dl>
+  </div>
+
+  <h2>Lines</h2>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr><th>#</th><th>Description</th><th class="num" th:text="${screen.priceLabel}">Price</th>
+        <th class="num">Line total</th><th class="num">Ordered</th>
+        <th class="num" th:text="${screen.sales} ? 'Invoiced' : 'Billed'">Invoiced</th>
+        <th class="num" th:text="${screen.sales} ? 'Shipped' : 'Received'">Shipped</th>
+        <th class="num" th:text="${screen.sales} ? 'To invoice' : 'To bill'">To invoice</th>
+        <th class="num" th:text="${screen.sales} ? 'To ship' : 'To receive'">To ship</th></tr></thead>
+      <tbody><tr th:each="l : ${lines}">
+        <td th:text="${l.get('line_no')}">1</td><td th:text="${l.get('description')}">Item</td>
+        <td class="num" th:text="${@fmt.amount(l.get(screen.priceField))}">0.00</td>
+        <td class="num" th:text="${@fmt.amount(l.get('line_total'))}">0.00</td>
+        <td class="num" th:text="${@fmt.qty(l.get('quantity'))}">1</td>
+        <td class="num" th:text="${@fmt.qty(l.get(screen.sales ? 'qty_invoiced' : 'qty_billed'))}">0</td>
+        <td class="num" th:text="${@fmt.qty(l.get(screen.sales ? 'qty_shipped' : 'qty_received'))}">0</td>
+        <td class="num" th:text="${@fmt.qty(l.get(screen.sales ? 'qty_to_invoice' : 'qty_to_bill'))}">0</td>
+        <td class="num" th:text="${@fmt.qty(l.get(screen.sales ? 'qty_to_ship' : 'qty_to_receive'))}">0</td>
+      </tr></tbody>
+    </table>
+  </div>
+
+  <section th:replace="~{parts :: print(${screen.path}, ${id})}"></section>
+</main>
+</body>
+</html>

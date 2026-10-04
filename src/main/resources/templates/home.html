@@ -1,14 +1,87 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Home · tadmor</title>
-</head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Home · tadmor</title></head>
 <body>
-<header th:replace="~{fragments/header :: header}"></header>
 <main>
-  <h1>Home</h1>
+  <div class="pagehead">
+    <h1>Home</h1>
+    <!--/* H5: one-step starts. */-->
+    <div class="actions">
+      <a class="button" th:href="@{/sales-invoices/new}">New invoice</a>
+      <a class="button" th:href="@{/customer-payments/new}">New customer payment</a>
+      <a class="button" th:href="@{/purchase-bills/new}">New bill</a>
+      <a class="button" th:href="@{/supplier-payments/new}">New supplier payment</a>
+      <a class="button" th:href="@{/sales-orders/new}">New sales order</a>
+      <a class="button" th:href="@{/purchase-orders/new}">New purchase order</a>
+    </div>
+  </div>
+
+  <!--/* H1 and H2. */-->
+  <div class="tiles">
+    <div class="card">
+      <div class="muted">Receivables outstanding</div>
+      <p class="muted" th:if="${receivables.isEmpty()}">None</p>
+      <div th:each="r : ${receivables}">
+        <span class="big" th:text="${r.currencyCode()} + ' ' + ${@fmt.amount(r.outstanding())}">USD 0.00</span>
+        <div class="small" th:classappend="${@fmt.nonZero(r.overdue())} ? 'neg' : 'muted'"
+             th:text="${@fmt.amount(r.overdue())} + ' overdue'">0.00 overdue</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="muted">Payables outstanding</div>
+      <p class="muted" th:if="${payables.isEmpty()}">None</p>
+      <div th:each="r : ${payables}">
+        <span class="big" th:text="${r.currencyCode()} + ' ' + ${@fmt.amount(r.outstanding())}">USD 0.00</span>
+        <div class="small" th:classappend="${@fmt.nonZero(r.overdue())} ? 'neg' : 'muted'"
+             th:text="${@fmt.amount(r.overdue())} + ' overdue'">0.00 overdue</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="muted">Open orders</div>
+      <div><a th:href="@{/sales-orders}"><span class="big" th:text="${counts.openSalesOrders()}">0</span> sales</a></div>
+      <div><a th:href="@{/purchase-orders}"><span class="big" th:text="${counts.openPurchaseOrders()}">0</span> purchase</a></div>
+    </div>
+    <div class="card">
+      <div class="muted">Drafts</div>
+      <div><a th:href="@{/sales-invoices}"><span class="big" th:text="${counts.draftInvoices()}">0</span> invoices</a></div>
+      <div><a th:href="@{/purchase-bills}"><span class="big" th:text="${counts.draftBills()}">0</span> bills</a></div>
+    </div>
+  </div>
+
+  <div class="columns">
+    <!--/* H3. */-->
+    <section>
+      <h2>Most overdue invoices</h2>
+      <p class="empty" th:if="${overdue.isEmpty()}">Nothing is overdue.</p>
+      <div class="tablewrap" th:unless="${overdue.isEmpty()}">
+        <table class="grid">
+          <thead><tr><th>Invoice</th><th>Customer</th><th>Due</th><th class="num">Balance</th></tr></thead>
+          <tbody><tr th:each="d : ${overdue}">
+            <td><a th:href="@{'/sales-invoices/' + ${d.id()}}" th:text="${d.number()}">INV</a></td>
+            <td th:text="${d.partyName()}">Customer</td><td th:text="${d.dueDate()}">date</td>
+            <td class="num" th:text="${d.currencyCode()} + ' ' + ${@fmt.amount(d.balance())}">0.00</td>
+          </tr></tbody>
+        </table>
+      </div>
+      <p><a th:href="@{/reports/ar-aging}">AR aging</a></p>
+    </section>
+    <!--/* H4. */-->
+    <section>
+      <h2>Bills due in the next 14 days</h2>
+      <p class="empty" th:if="${dueSoon.isEmpty()}">Nothing falls due.</p>
+      <div class="tablewrap" th:unless="${dueSoon.isEmpty()}">
+        <table class="grid">
+          <thead><tr><th>Bill</th><th>Supplier</th><th>Due</th><th class="num">Balance</th></tr></thead>
+          <tbody><tr th:each="d : ${dueSoon}">
+            <td><a th:href="@{'/purchase-bills/' + ${d.id()}}" th:text="${d.number()}">BILL</a></td>
+            <td th:text="${d.partyName()}">Supplier</td><td th:text="${d.dueDate()}">date</td>
+            <td class="num" th:text="${d.currencyCode()} + ' ' + ${@fmt.amount(d.balance())}">0.00</td>
+          </tr></tbody>
+        </table>
+      </div>
+      <p><a th:href="@{/reports/ap-aging}">AP aging</a></p>
+    </section>
+  </div>
 </main>
 </body>
 </html>

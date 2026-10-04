@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!--/* D2, O2: header and any number of lines; app.js adds and removes lines, fills them, and previews totals. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title th:text="(${id} == null ? 'New ' : 'Edit ') + ${screen.singular} + ' · tadmor'">Document · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1 th:text="(${id} == null ? 'New ' : 'Edit ') + ${screen.singular}">New invoice</h1></div>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Refused.</p>
+  <script type="application/json" id="client-data" th:utext="${clientData}">{}</script>
+  <form id="docform" class="form wide" method="post" th:action="@{${action}}">
+    <div class="card columns">
+      <label class="field"><span>Number</span><span class="req">required</span>
+        <input th:name="${screen.numberField}" th:value="${header.get(screen.numberField)}"></label>
+      <label class="field"><span th:text="${screen.partyLabel}">Customer</span><span class="req">required</span>
+        <select th:name="${screen.partyField}" th:with="v=${'' + header.get(screen.partyField)}">
+          <option value="">—</option>
+          <option th:each="o : ${@choices.of(screen.partyChoices)}" th:if="${o.active() or o.value() == v}"
+                  th:value="${o.value()}" th:text="${o.label()}" th:selected="${o.value() == v}">Party</option>
+        </select></label>
+      <label class="field"><span>Date</span><span class="req">required</span>
+        <input type="date" th:name="${screen.dateField}" th:value="${header.get(screen.dateField)}"></label>
+      <label class="field" th:if="${screen.dueField != null}"><span th:text="${screen.dueLabel}">Due date</span>
+        <input type="date" th:name="${screen.dueField}" th:value="${header.get(screen.dueField)}"></label>
+      <label class="field"><span>Currency</span><span class="req">required</span>
+        <select name="currency_code" th:with="v=${header.get('currency_code')}">
+          <option th:each="o : ${@choices.of('currencies')}" th:value="${o.value()}" th:text="${o.label()}"
+                  th:selected="${o.value() == v}">USD</option>
+        </select></label>
+      <label class="field"><span>Reference</span><input name="reference" th:value="${header.get('reference')}"></label>
+      <label class="field"><span>Memo</span><input name="memo" th:value="${header.get('memo')}"></label>
+    </div>
+
+    <div class="tablewrap">
+      <table class="grid lines" id="lines">
+        <thead><tr><th>Product</th><th>Description</th><th class="num">Qty</th>
+          <th class="num" th:text="${screen.priceLabel}">Unit price</th><th th:text="${screen.accountLabel}">Account</th>
+          <th>Tax code</th><th class="num">Tax %</th><th class="num">Subtotal</th><th class="num">Tax</th><th class="num">Total</th><th></th></tr></thead>
+        <tbody>
+          <tr class="line" th:each="l : ${lines}" th:insert="~{doc-form :: line(${l})}"></tr>
+        </tbody>
+      </table>
+    </div>
+    <template id="line-template"><tr class="line" th:insert="~{doc-form :: line(${null})}"></tr></template>
+    <div class="actions"><button type="button" id="add-line">Add line</button></div>
+
+    <table class="totals card">
+      <tr><td>Subtotal</td><td class="num" id="sum-subtotal"></td></tr>
+      <tr><td>Tax</td><td class="num" id="sum-tax"></td></tr>
+      <tr><td><strong>Total</strong></td><td class="num"><strong id="sum-total"></strong></td></tr>
+    </table>
+    <div class="actions">
+      <button type="submit" class="primary">Save</button>
+      <a class="button" th:href="@{${cancel}}">Cancel</a>
+    </div>
+  </form>
+
+</main>
+  <!--/* One line's cells; l is the line's values, or null for a blank line. */-->
+<th:block th:fragment="line(l)">
+  <td><select name="l_product_id" class="product" th:with="v=${l == null ? '' : '' + l.get('product_id')}">
+    <option value="">—</option>
+    <option th:each="o : ${@choices.of('products')}" th:if="${o.active() or o.value() == v}" th:value="${o.value()}"
+            th:text="${o.label()}" th:selected="${o.value() == v}">Product</option></select></td>
+  <td><input name="l_description" class="desc" th:value="${l == null ? '' : l.get('description')}"></td>
+  <td><input name="l_quantity" class="qty num narrow" inputmode="decimal"
+             th:value="${l == null ? '1' : @fmt.qty(l.get('quantity'))}"></td>
+  <td><input name="l_price" class="price num narrow" inputmode="decimal"
+             th:value="${l == null ? '' : @fmt.qty(l.get('price'))}"></td>
+  <td><select name="l_account_id" class="account" th:with="v=${l == null ? '' : '' + l.get('account_id')}">
+    <option value="">—</option>
+    <option th:each="o : ${@choices.of('postable-accounts')}" th:if="${o.active() or o.value() == v}" th:value="${o.value()}"
+            th:text="${o.label()}" th:selected="${o.value() == v}">Account</option></select></td>
+  <td><select name="l_tax_code" class="taxcode" th:with="v=${l == null ? '' : '' + l.get('tax_code')}">
+    <option value="">—</option>
+    <option th:each="o : ${@choices.of('tax-codes')}" th:if="${o.active() or o.value() == v}" th:value="${o.value()}"
+            th:text="${o.value()}" th:selected="${o.value() == v}">STD</option></select></td>
+  <td><input name="l_tax_rate" class="rate num narrow" inputmode="decimal"
+             th:value="${l == null ? '0' : @fmt.qty(l.get('tax_rate'))}"></td>
+  <td class="num out-subtotal"></td><td class="num out-tax"></td><td class="num out-total"></td>
+  <td><button type="button" class="link remove" aria-label="Remove line">Remove</button></td>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--/* A2: says what closing will do before doing it. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Close the year · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1 th:text="'Close ' + ${year.name()}">Close FY2026</h1></div>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Refused.</p>
+  <div class="card mb">
+    <p>Closing the year will:</p>
+    <ul>
+      <li th:text="'Post a closing entry dated ' + ${year.endDate()} + ' that moves every revenue and expense balance into the retained earnings account below (none if there is nothing to move).'">Post.</li>
+      <li>Close every period of the year, then the year itself; nothing more can be posted into it until it is reopened.</li>
+      <li th:text="'Create the next fiscal year (' + ${nextName} + ') if none covers the day after ' + ${year.endDate()} + '.'">Roll forward.</li>
+    </ul>
+  </div>
+  <form class="form card" method="post" th:action="@{'/year-end/' + ${year.id()} + '/close'}">
+    <label class="field"><span>Retained earnings account</span><span class="req">required</span>
+      <select name="retained_earnings_account_id">
+        <option th:each="o : ${@choices.of('equity-accounts')}" th:if="${o.active()}" th:value="${o.value()}"
+                th:text="${o.label()}" th:selected="${o.value() == retained}">3000 · Retained Earnings</option>
+      </select></label>
+    <div class="actions"><button type="submit" class="primary">Close the year</button>
+      <a class="button" th:href="@{/periods}">Cancel</a></div>
+  </form>
+</main>
+</body>
+</html>

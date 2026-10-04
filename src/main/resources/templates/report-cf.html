@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--/* R3: indirect method. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: page(~{::title}, ~{::main})}">
+<head><title>Cash flow · tadmor</title></head>
+<body>
+<main>
+  <div class="pagehead"><h1>Cash flow</h1></div>
+  <form th:replace="~{parts :: range('/reports/cash-flow', ${from}, ${to})}"></form>
+  <p class="error" role="alert" th:if="${error}" th:text="${error}">Bad date.</p>
+  <div class="tablewrap">
+    <table class="grid">
+      <thead><tr><th>Item</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        <th:block th:each="s, it : ${sections}">
+          <tr class="section"><td colspan="2" th:text="${s.title()}">Operating</td></tr>
+          <tr th:if="${it.first}"><td>Net income</td><td th:replace="~{parts :: amount(${cf.netIncome()})}"></td></tr>
+          <tr th:each="r : ${s.rows()}">
+            <td><a th:href="@{'/accounts/' + ${r.accountId()} + '/ledger'}" th:text="${r.code()} + ' · ' + ${r.name()}">1100</a></td>
+            <td th:replace="~{parts :: amount(${r.amount()})}"></td></tr>
+          <tr class="subtotal"><td th:text="'Net cash from ' + ${#strings.toLowerCase(s.title())}">Net</td>
+            <td th:replace="~{parts :: amount(${s.total()})}"></td></tr>
+        </th:block>
+      </tbody>
+      <tfoot>
+        <tr><td>Opening cash</td><td th:replace="~{parts :: amount(${cf.openingCash()})}"></td></tr>
+        <tr><td>Net cash flow</td><td th:replace="~{parts :: amount(${cf.netCashFlow()})}"></td></tr>
+        <tr><td>Closing cash</td><td th:replace="~{parts :: amount(${cf.closingCash()})}"></td></tr>
+      </tfoot>
+    </table>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--/* The page every signed-in screen fills: pages pass their <title> and <main>. */-->
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content)">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:replace="${title}">Page</title>
+  <link rel="stylesheet" th:href="@{/app.css}">
+  <script th:src="@{/app.js}" defer></script>
+</head>
+<body>
+<input type="checkbox" id="navtoggle" class="navtoggle" aria-hidden="true">
+<header class="topbar">
+  <label for="navtoggle" class="navbutton">Menu</label>
+  <a class="brand" th:href="@{/}">tadmor</a>
+  <div class="who" th:if="${currentUser != null}">
+    <span><span th:text="${currentUser.fullName()}">Name</span>
+      <span class="tag" th:if="${currentUser.isAdmin()}">admin</span></span>
+    <form method="post" th:action="@{/logout}"><button class="link">Sign out</button></form>
+  </div>
+</header>
+<div class="shell">
+  <nav class="sidebar" aria-label="Main">
+    <div class="navgroup" th:each="group : ${@nav.groups(currentUser, path)}">
+      <div class="navtitle" th:text="${group.title()}">Group</div>
+      <a th:each="link : ${group.links()}" th:href="@{${link.url()}}" th:text="${link.text()}"
+         th:classappend="${link.active()} ? 'active'" th:attr="aria-current=${link.active()} ? 'page'">Link</a>
+    </div>
+  </nav>
+  <main th:replace="${content}">Content</main>
+</div>
+</body>
+</html>
