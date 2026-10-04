@@ -1,16 +1,16 @@
 package com.belunaro.tadmor.service;
 
 /**
- * The subledger documents with lines (spec/api.md §5.9), described by the
- * schema names that set them apart, so that one implementation of the
- * lifecycle (DocumentService) and of posting (PostingService) serves every
- * kind. The fields are SQL identifiers from the shared schema, never user
+ * The documents with lines (spec/api.md §5.9, §5.10), described by the
+ * schema names that set them apart, so that one implementation of the draft
+ * lifecycle (DocumentService) serves every kind, and one of posting
+ * (PostingService) every kind that posts. The fields are SQL identifiers from the shared schema, never user
  * input, which is what makes it safe to build statements from them.
  */
 public enum DocumentKind {
 
 	SALES_INVOICE("Sales invoice", "sales_invoices", "sales_invoice_lines", "invoice_id",
-			"invoice_number", "customer_id", "invoice_date", true,
+			"invoice_number", "customer_id", "invoice_date", "due_date",
 			"unit_price", "revenue_account_id", "revenue_account_id",
 			"customers", "ar_account_id", Side.CREDIT,
 			"sales_invoice_balances", "invoice_id", "payment_status", true,
@@ -19,7 +19,7 @@ public enum DocumentKind {
 					UNION ALL SELECT 1 FROM sales_credit_applications WHERE invoice_id = :id"""),
 
 	PURCHASE_BILL("Purchase bill", "purchase_bills", "purchase_bill_lines", "bill_id",
-			"bill_number", "supplier_id", "bill_date", true,
+			"bill_number", "supplier_id", "bill_date", "due_date",
 			"unit_cost", "expense_account_id", "inventory_account_id",
 			"suppliers", "ap_account_id", Side.DEBIT,
 			"purchase_bill_balances", "bill_id", "payment_status", true,
@@ -29,7 +29,7 @@ public enum DocumentKind {
 
 	/** Credits a customer: the mirror of an invoice. Credit notes do not age, so they have no due date. */
 	SALES_CREDIT_NOTE("Sales credit note", "sales_credit_notes", "sales_credit_note_lines", "credit_note_id",
-			"credit_note_number", "customer_id", "credit_note_date", false,
+			"credit_note_number", "customer_id", "credit_note_date", null,
 			"unit_price", "revenue_account_id", "revenue_account_id",
 			"customers", "ar_account_id", Side.DEBIT,
 			"sales_credit_note_balances", "credit_note_id", "application_status", false,
@@ -37,11 +37,26 @@ public enum DocumentKind {
 
 	/** A supplier's credit to us: the mirror of a bill. */
 	PURCHASE_CREDIT_NOTE("Purchase credit note", "purchase_credit_notes", "purchase_credit_note_lines", "credit_note_id",
-			"credit_note_number", "supplier_id", "credit_note_date", false,
+			"credit_note_number", "supplier_id", "credit_note_date", null,
 			"unit_cost", "expense_account_id", "inventory_account_id",
 			"suppliers", "ap_account_id", Side.CREDIT,
 			"purchase_credit_note_balances", "credit_note_id", "application_status", false,
-			"SELECT 1 FROM purchase_credit_applications WHERE credit_note_id = :id");
+			"SELECT 1 FROM purchase_credit_applications WHERE credit_note_id = :id"),
+
+	/**
+	 * Orders are drafted like invoices and bills, but never post: they are
+	 * read, confirmed, and fulfilled through OrderService, and the posting
+	 * fields are null.
+	 */
+	SALES_ORDER("Sales order", "sales_orders", "sales_order_lines", "order_id",
+			"order_number", "customer_id", "order_date", "expected_ship_date",
+			"unit_price", "revenue_account_id", null,
+			"customers", null, null, null, null, null, false, null),
+
+	PURCHASE_ORDER("Purchase order", "purchase_orders", "purchase_order_lines", "order_id",
+			"order_number", "supplier_id", "order_date", "expected_receipt_date",
+			"unit_cost", "expense_account_id", null,
+			"suppliers", null, null, null, null, null, false, null);
 
 	/** The side a document's revenue, expense, and tax lines post to; the control line takes the other. */
 	enum Side {
@@ -56,7 +71,8 @@ public enum DocumentKind {
 	final String number;
 	final String party;
 	final String date;
-	final boolean hasDueDate;
+	/** The optional second date: due_date, an order's expected date, or null for credit notes. */
+	final String dueDate;
 	/** The lines' unit price or unit cost column. */
 	final String price;
 	/** The lines' revenue or expense account column. */
@@ -77,7 +93,7 @@ public enum DocumentKind {
 	final String applications;
 
 	DocumentKind(String label, String table, String linesTable, String lineDocument, String number, String party,
-			String date, boolean hasDueDate, String price, String account, String productAccount, String partyTable,
+			String date, String dueDate, String price, String account, String productAccount, String partyTable,
 			String control, Side detailSide, String balances, String balancesId, String settlement, boolean orderLines,
 			String applications) {
 		this.label = label;
@@ -87,7 +103,7 @@ public enum DocumentKind {
 		this.number = number;
 		this.party = party;
 		this.date = date;
-		this.hasDueDate = hasDueDate;
+		this.dueDate = dueDate;
 		this.price = price;
 		this.account = account;
 		this.productAccount = productAccount;

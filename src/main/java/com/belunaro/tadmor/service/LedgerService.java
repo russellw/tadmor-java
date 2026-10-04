@@ -89,4 +89,17 @@ public class LedgerService {
 				    total_credit::numeric(19,4)::text AS total_credit, balance::numeric(19,4)::text AS balance
 				FROM trial_balance ORDER BY code""").query(TrialBalanceRow.class).list();
 	}
+
+	/** Each product with movements, valued at moving-average cost in base currency. */
+	public record ValuationRow(int productId, String sku, String name, String qtyOnHand, String valueOnHand,
+			String avgUnitCost) {
+	}
+
+	public List<ValuationRow> inventoryValuation() {
+		return jdbc.sql("""
+				SELECT v.product_id, p.sku, p.name, v.qty_on_hand::numeric(19,4)::text AS qty_on_hand,
+				    v.value_on_hand::numeric(19,4)::text AS value_on_hand, v.avg_unit_cost::numeric(19,4)::text AS avg_unit_cost
+				FROM stock_valuation v JOIN products p ON p.id = v.product_id
+				ORDER BY p.sku""").query(ValuationRow.class).list();
+	}
 }

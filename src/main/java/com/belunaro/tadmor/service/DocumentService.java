@@ -110,6 +110,25 @@ public class DocumentService {
 		}
 	}
 
+	public record SalesOrderInput(String orderNumber, Integer customerId, String orderDate, String expectedShipDate,
+			String currencyCode, String reference, String memo, List<SalesLineInput> lines) implements DocumentRequest {
+		@Override
+		public DocumentInput document() {
+			return new DocumentInput(orderNumber, customerId, orderDate, expectedShipDate, currencyCode, reference, memo,
+					lines == null ? null : lines.stream().map(SalesLineInput::line).toList());
+		}
+	}
+
+	public record PurchaseOrderInput(String orderNumber, Integer supplierId, String orderDate,
+			String expectedReceiptDate, String currencyCode, String reference, String memo,
+			List<PurchaseLineInput> lines) implements DocumentRequest {
+		@Override
+		public DocumentInput document() {
+			return new DocumentInput(orderNumber, supplierId, orderDate, expectedReceiptDate, currencyCode, reference,
+					memo, lines == null ? null : lines.stream().map(PurchaseLineInput::line).toList());
+		}
+	}
+
 	// ---- read shapes: the kind's key fields, then the fields all share ----
 
 	public record SalesInvoice(int id, String invoiceNumber, int customerId, String invoiceDate, String dueDate,
@@ -148,7 +167,7 @@ public class DocumentService {
 
 	private static String select(DocumentKind k) {
 		return "SELECT b." + k.balancesId + " AS id, b." + k.number + ", b." + k.party + ", b." + k.date + "::text AS "
-				+ k.date + (k.hasDueDate ? ", b.due_date::text AS due_date" : "") + ", b." + k.settlement + """
+				+ k.date + (k.dueDate != null ? ", b.due_date::text AS due_date" : "") + ", b." + k.settlement + """
 				, b.currency_code, b.status, b.total::numeric(19,4)::text AS total,
 				    b.amount_applied::numeric(19,4)::text AS amount_applied, b.balance::numeric(19,4)::text AS balance,
 				    d.journal_entry_id, d.reference, d.memo
@@ -181,8 +200,8 @@ public class DocumentService {
 	public int create(DocumentKind k, DocumentInput in) {
 		validate(k, in);
 		int id = jdbc.sql("INSERT INTO " + k.table + " (" + k.number + ", " + k.party + ", " + k.date
-				+ (k.hasDueDate ? ", due_date" : "") + ", currency_code, reference, memo) VALUES (:number, :partyId, "
-				+ "CAST(:date AS date)" + (k.hasDueDate ? ", CAST(:dueDate AS date)" : "")
+				+ (k.dueDate != null ? ", " + k.dueDate : "") + ", currency_code, reference, memo) VALUES (:number, "
+				+ ":partyId, CAST(:date AS date)" + (k.dueDate != null ? ", CAST(:dueDate AS date)" : "")
 				+ ", :currencyCode, :reference, :memo) RETURNING id").paramSource(in).query(Integer.class).single();
 		insertLines(k, id, in.lines());
 		return id;
@@ -201,7 +220,7 @@ public class DocumentService {
 			throw ServiceException.conflict(k.label + " " + id + " was produced from an order and cannot be edited");
 		}
 		jdbc.sql("UPDATE " + k.table + " SET " + k.number + " = :number, " + k.party + " = :partyId, " + k.date
-				+ " = CAST(:date AS date)" + (k.hasDueDate ? ", due_date = CAST(:dueDate AS date)" : "")
+				+ " = CAST(:date AS date)" + (k.dueDate != null ? ", " + k.dueDate + " = CAST(:dueDate AS date)" : "")
 				+ ", currency_code = :currencyCode, reference = :reference, memo = :memo WHERE id = :id")
 				.paramSource(Params.of(in, "id", id)).update();
 		jdbc.sql("DELETE FROM " + k.linesTable + " WHERE " + k.lineDocument + " = ?").param(id).update();
