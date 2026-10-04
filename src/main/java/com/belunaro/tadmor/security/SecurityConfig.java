@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -54,8 +55,13 @@ public class SecurityConfig {
 						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 						.requestMatchers("/healthz", "/readyz", "/error").permitAll()
 						.requestMatchers("/api/auth/login", "/api/auth/logout").permitAll()
-						// Administrator-only endpoints (spec/domain.md §12).
+						// Administrator-only endpoints (spec/domain.md §12, the "(admin)"
+						// marks of spec/api.md), gated here so that a non-administrator
+						// gets 403 before anything else is checked (§1.4).
 						.requestMatchers("/api/users", "/api/users/**").hasRole("ADMIN")
+						.requestMatchers(HttpMethod.PUT, "/api/settings").hasRole("ADMIN")
+						.requestMatchers(HttpMethod.POST, "/api/*/*/unpost", "/api/fiscal-years/*/close",
+								"/api/fiscal-years/*/reopen", "/api/bank-statements/*/reopen").hasRole("ADMIN")
 						.requestMatchers("/login").permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(ex -> ex
