@@ -2,95 +2,16 @@ package com.belunaro.tadmor.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.math.BigDecimal;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import tools.jackson.databind.JsonNode;
 
-import com.belunaro.tadmor.IntegrationTest;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** spec/api.md §5.9 and §5.14, with spec/domain.md §2, §4, §7, and §9.2. */
-class DocumentsApiTest extends IntegrationTest {
-
-	/** Each test posts into fiscal years of its own, far from every other test's. */
-	private static final AtomicInteger years = new AtomicInteger(2600);
-
-	private String session;
-	private String adminSession;
-	private int y;
-
-	@BeforeEach
-	void setUp() throws Exception {
-		session = login(createUser(false));
-		adminSession = login(createUser(true));
-		y = years.incrementAndGet();
-		create("/api/fiscal-years", "{\"name\":\"FY-doc-" + y + "\",\"start_date\":\"" + y + "-01-01\",\"end_date\":\"" + y + "-12-31\"}");
-	}
-
-	private int create(String path, String body) throws Exception {
-		HttpResponse<String> r = postJson(path, body, session);
-		assertThat(r.statusCode()).as(path + " " + r.body()).isEqualTo(201);
-		return json(r.body()).get("id").asInt();
-	}
-
-	private JsonNode read(String path) throws Exception {
-		HttpResponse<String> r = get(path, session);
-		assertThat(r.statusCode()).as(path + " " + r.body()).isEqualTo(200);
-		return json(r.body());
-	}
-
-	private int account(String type) throws Exception {
-		return create("/api/accounts", "{\"code\":\"D" + System.nanoTime() + "\",\"name\":\"X\",\"account_type\":\"" + type
-				+ "\",\"is_postable\":true}");
-	}
-
-	private int org() throws Exception {
-		return create("/api/organizations", "{\"name\":\"Org " + System.nanoTime() + "\"}");
-	}
-
-	private int customer(int ar) throws Exception {
-		return create("/api/customers", "{\"organization_id\":" + org() + ",\"ar_account_id\":" + ar + "}");
-	}
-
-	private int supplier(int ap) throws Exception {
-		return create("/api/suppliers", "{\"organization_id\":" + org() + ",\"ap_account_id\":" + ap + "}");
-	}
-
-	private static String uniq(String prefix) {
-		return prefix + System.nanoTime();
-	}
-
-	private String invoice(int customer, String date, String currency, String lines) {
-		return "{\"invoice_number\":\"" + uniq("INV") + "\",\"customer_id\":" + customer + ",\"invoice_date\":\"" + date
-				+ "\",\"currency_code\":\"" + currency + "\",\"lines\":[" + lines + "]}";
-	}
-
-	private int post(String collection, int id) throws Exception {
-		HttpResponse<String> r = postJson("/api/" + collection + "/" + id + "/post", "", session);
-		assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
-		return json(r.body()).get("journal_entry_id").asInt();
-	}
-
-	private static String dec(JsonNode n) {
-		return new BigDecimal(n.asString()).stripTrailingZeros().toPlainString();
-	}
-
-	/** An entry's lines as "account dr|cr amount base", order ignored (not contract). */
-	private List<String> lines(int entry) throws Exception {
-		List<String> out = new ArrayList<>();
-		for (JsonNode l : read("/api/journal-entries/" + entry).get("lines")) {
-			boolean debit = new BigDecimal(l.get("debit").asString()).signum() > 0;
-			out.add(l.get("account_id").asInt() + (debit ? " dr " : " cr ") + dec(l.get(debit ? "debit" : "credit")) + " "
-					+ dec(l.get(debit ? "base_debit" : "base_credit")));
-		}
-		return out;
-	}
+class DocumentsApiTest extends PostingTest {
 
 	@Test
 	void invoiceMoneyEditsAndListOrder() throws Exception {
