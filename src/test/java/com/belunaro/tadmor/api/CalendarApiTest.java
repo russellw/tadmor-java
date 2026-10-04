@@ -121,9 +121,11 @@ class CalendarApiTest extends IntegrationTest {
 		assertJsonError(sendJson("PUT", "/api/settings", "{\"base_currency\":\"ZZZ\"}", adminSession), 422);
 		assertJsonError(sendJson("PUT", "/api/settings", "{\"base_currency\":\"USD\",\"fx_gain_loss_account_id\":" + summary + "}", adminSession), 422);
 
-		assertThat(sendJson("PUT", "/api/settings", "{\"base_currency\":\"eur\",\"fx_gain_loss_account_id\":null}", adminSession).statusCode())
-				.isEqualTo(204);
-		assertThat(read("/api/settings")).isEqualTo("{\"base_currency\":\"EUR\",\"fx_gain_loss_account_id\":null}");
+		// Keeps the base currency: other tests may already have posted entries, which freeze it.
+		String base = json(settings).get("base_currency").asString();
+		assertThat(sendJson("PUT", "/api/settings", "{\"base_currency\":\"" + base.toLowerCase() + "\",\"fx_gain_loss_account_id\":null}",
+				adminSession).statusCode()).isEqualTo(204);
+		assertThat(read("/api/settings")).isEqualTo("{\"base_currency\":\"" + base + "\",\"fx_gain_loss_account_id\":null}");
 	}
 
 	@Test

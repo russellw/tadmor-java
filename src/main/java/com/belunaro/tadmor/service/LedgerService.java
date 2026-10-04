@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
-/** Journal reads (spec/api.md §5.14). Figures cover posted entries only. */
+/** Journal reads and reports (spec/api.md §5.14). Report figures cover posted entries only, in base currency. */
 @Service
 public class LedgerService {
 
@@ -47,5 +47,46 @@ public class LedgerService {
 				.param("to", to)
 				.query(LedgerRow.class)
 				.list();
+	}
+
+	/** A journal entry with its lines, in line order; amounts in the entry's currency and in base. */
+	public record JournalEntry(int id, String entryDate, String currencyCode, String exchangeRate, String reference,
+			String memo, String status, List<JournalLine> lines) {
+	}
+
+	public record JournalLine(int lineNo, int accountId, String accountCode, String accountName, String memo,
+			String debit, String credit, String baseDebit, String baseCredit) {
+	}
+
+	private record EntryHeader(int id, String entryDate, String currencyCode, String exchangeRate, String reference,
+			String memo, String status) {
+	}
+
+	public JournalEntry journalEntry(int id) {
+		EntryHeader e = jdbc.sql("""
+				SELECT id, entry_date::text AS entry_date, currency_code, trim_scale(exchange_rate)::text AS exchange_rate,
+				    reference, memo, status
+				FROM journal_entries WHERE id = ?""").param(id).query(EntryHeader.class).optional()
+				.orElseThrow(ServiceException::notFound);
+		List<JournalLine> lines = jdbc.sql("""
+				SELECT jl.line_no, jl.account_id, a.code AS account_code, a.name AS account_name, jl.memo,
+				    jl.debit::text AS debit, jl.credit::text AS credit,
+				    jl.base_debit::text AS base_debit, jl.base_credit::text AS base_credit
+				FROM journal_lines jl JOIN accounts a ON a.id = jl.account_id
+				WHERE jl.journal_entry_id = ? ORDER BY jl.line_no""").param(id).query(JournalLine.class).list();
+		return new JournalEntry(e.id(), e.entryDate(), e.currencyCode(), e.exchangeRate(), e.reference(), e.memo(),
+				e.status(), lines);
+	}
+
+	/** Every account, active or not and with or without activity, in base amounts; the balance is debit-positive. */
+	public record TrialBalanceRow(int accountId, String code, String name, String accountType, String totalDebit,
+			String totalCredit, String balance) {
+	}
+
+	public List<TrialBalanceRow> trialBalance() {
+		return jdbc.sql("""
+				SELECT account_id, code, name, account_type, total_debit::numeric(19,4)::text AS total_debit,
+				    total_credit::numeric(19,4)::text AS total_credit, balance::numeric(19,4)::text AS balance
+				FROM trial_balance ORDER BY code""").query(TrialBalanceRow.class).list();
 	}
 }

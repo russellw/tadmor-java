@@ -33,6 +33,11 @@ public class ServiceException extends RuntimeException {
 		return new ServiceException(HttpStatus.NOT_FOUND, "not found");
 	}
 
+	/** 409: the record is in the wrong state for the operation. */
+	public static ServiceException conflict(String message) {
+		return new ServiceException(HttpStatus.CONFLICT, message);
+	}
+
 	/** 404 when an update matched no row. */
 	public static void found(int rowsUpdated) {
 		if (rowsUpdated == 0) {

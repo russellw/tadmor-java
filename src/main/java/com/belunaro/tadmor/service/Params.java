@@ -1,5 +1,6 @@
 package com.belunaro.tadmor.service;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.jdbc.core.namedparam.SimplePropertySqlParameterSource;
@@ -19,8 +20,13 @@ final class Params implements SqlParameterSource {
 		this.extra = extra;
 	}
 
-	static Params of(Object record, String name, Object value) {
-		return new Params(record, Map.of(name, value));
+	/** The record's components, plus extra values given as name, value pairs. */
+	static Params of(Object record, Object... extra) {
+		Map<String, Object> values = new HashMap<>();
+		for (int i = 0; i < extra.length; i += 2) {
+			values.put((String) extra[i], extra[i + 1]);
+		}
+		return new Params(record, values);
 	}
 
 	@Override

@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -104,6 +107,13 @@ public abstract class IntegrationTest {
 		assertThat(r.headers().firstValue("Content-Type"))
 				.hasValueSatisfying(t -> assertThat(t).startsWith("application/json"));
 		assertThat(r.body()).startsWith("{\"error\":\"");
+	}
+
+	private static final JsonMapper JSON = JsonMapper.builder().build();
+
+	/** Parses a response body. */
+	protected static JsonNode json(String body) {
+		return JSON.readTree(body);
 	}
 
 	/** The Set-Cookie header for the named cookie, if the response set it. */

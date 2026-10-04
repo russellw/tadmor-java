@@ -9,9 +9,10 @@ it; see [`docs/stack.md`](docs/stack.md).
 
 **Status:** early. The server migrates the shared schema on start, serves
 the probes, has login, logout, and sessions for both the JSON API and the
-UI, and has the users, master data, calendar, and settings APIs. Documents,
-posting, and the rest of the UI are still to come; `make conformance` passes
-13 of its 35 cases.
+UI, and has the users, master data, calendar, and settings APIs, and
+invoices, bills, and credit notes with posting. Payments and settlement,
+orders, inventory, banking, year-end, most reports, and the rest of the UI
+are still to come; `make conformance` passes 19 of its 35 cases.
 
 ## Layout
 
@@ -58,8 +59,9 @@ Endpoints so far: `GET /healthz` (liveness), `GET /readyz` (database
 reachable), `/api/auth/*`, `/api/users`, and master data: organizations,
 customers, suppliers, products, accounts (with their ledgers), tax codes,
 payment terms, and warehouses; fiscal years and accounting periods; and
-the ledger settings and exchange rates (spec/api.md §3, §5.1 to §5.8, less
-year-end close and reopen, which come with posting).
+the ledger settings and exchange rates; sales invoices, purchase bills, and
+both kinds of credit note, with posting and unposting; journal entries and
+the trial balance (spec/api.md §3, §5.1 to §5.9, part of §5.14).
 
 ## Build, run, test
 
