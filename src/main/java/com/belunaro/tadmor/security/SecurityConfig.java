@@ -54,6 +54,8 @@ public class SecurityConfig {
 						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 						.requestMatchers("/healthz", "/readyz", "/error").permitAll()
 						.requestMatchers("/api/auth/login", "/api/auth/logout").permitAll()
+						// Administrator-only endpoints (spec/domain.md §12).
+						.requestMatchers("/api/users", "/api/users/**").hasRole("ADMIN")
 						.requestMatchers("/login").permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(ex -> ex

@@ -22,8 +22,9 @@ a conversation first. The resolved Maven repository is committed under vendor/, 
 build runs offline against it; nothing is fetched from Maven Central at build or run time.
 
 Working on it:
-Business rules live in a service layer shared by the JSON API and the HTML UI.
-Never put a rule in a controller.
+Business rules live in service/, shared by the JSON API (api/) and the HTML UI (ui/).
+Services throw ServiceException carrying the spec's HTTP status. Never put a rule in a controller.
+Bind string parameters for citext columns with ?::citext (pgjdbc sends varchar).
 spec/, conformance/, and db/migrations/ are copies from tadmor (spec/UPSTREAM);
 never edit them here. Re-export from tadmor with spec/export.sh.
 

@@ -16,19 +16,6 @@ class AuthApiTest extends IntegrationTest {
 		return "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
 	}
 
-	/** Logs in and returns the session cookie, ready to send. */
-	private String login(TestUser user) throws Exception {
-		HttpResponse<String> r = postJson("/api/auth/login", loginBody(user.email(), user.password()));
-		assertThat(r.statusCode()).isEqualTo(200);
-		return cookiePair(setCookie(r, "tadmor_session").orElseThrow());
-	}
-
-	private static void assertJsonError(HttpResponse<String> r, int status) {
-		assertThat(r.statusCode()).isEqualTo(status);
-		assertThat(r.headers().firstValue("Content-Type")).hasValueSatisfying(t -> assertThat(t).startsWith("application/json"));
-		assertThat(r.body()).startsWith("{\"error\":\"");
-	}
-
 	@Test
 	void loginReturnsUserAndSetsSessionCookie() throws Exception {
 		TestUser user = createUser(true);

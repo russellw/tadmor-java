@@ -8,8 +8,8 @@ exposure, and this one measures mainstream Spring Boot as teams actually use
 it; see [`docs/stack.md`](docs/stack.md).
 
 **Status:** early. The server migrates the shared schema on start, serves
-the probes, and has login, logout, and sessions for both the JSON API and
-the UI. The rest of the API and UI is still to come.
+the probes, has login, logout, and sessions for both the JSON API and the
+UI, and has the users API. The rest of the API and UI is still to come.
 
 ## Layout
 
@@ -18,6 +18,7 @@ src/main/java/com/belunaro/tadmor/
   AddUser, ResetDb command-line tools (java -jar tadmor.jar adduser|resetdb)
   db/              connection pool from DATABASE_URL; the migration runner
   security/        Spring Security: credentials, sessions, the filter chain
+  service/         business rules, shared by the JSON API and the UI
   api/             the JSON API of spec/api.md
   ui/              the server-rendered UI of spec/domain.md §13
   web/             probes and the error page, shared by both
@@ -52,7 +53,7 @@ No dependency download step: every artifact the build uses is already in
 | `JAVA` | `java` | Java launcher the Makefile and `tools/conformance.sh` use |
 
 Endpoints so far: `GET /healthz` (liveness), `GET /readyz` (database
-reachable), and `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`.
+reachable), `/api/auth/*`, and `/api/users` (spec/api.md §3 and §5.1).
 
 ## Build, run, test
 

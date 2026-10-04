@@ -1,5 +1,7 @@
 package com.belunaro.tadmor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -73,12 +75,35 @@ public abstract class IntegrationTest {
 
 	protected HttpResponse<String> postJson(String path, String body, String... cookies)
 			throws IOException, InterruptedException {
+		return sendJson("POST", path, body, cookies);
+	}
+
+	protected HttpResponse<String> sendJson(String method, String path, String body, String... cookies)
+			throws IOException, InterruptedException {
 		HttpRequest.Builder r = request(path).header("Content-Type", "application/json")
-				.POST(HttpRequest.BodyPublishers.ofString(body));
+				.method(method, HttpRequest.BodyPublishers.ofString(body));
 		if (cookies.length > 0) {
 			r.header("Cookie", String.join("; ", cookies));
 		}
 		return send(r);
+	}
+
+	/** Logs the user in through the API and returns the session cookie, ready to send. */
+	protected String login(TestUser user) throws IOException, InterruptedException {
+		HttpResponse<String> r = postJson("/api/auth/login",
+				"{\"email\":\"" + user.email() + "\",\"password\":\"" + user.password() + "\"}");
+		if (r.statusCode() != 200) {
+			throw new AssertionError("login failed: " + r.statusCode() + " " + r.body());
+		}
+		return cookiePair(setCookie(r, "tadmor_session").orElseThrow());
+	}
+
+	/** Asserts the status and the spec's JSON error shape (spec/api.md §1.4). */
+	protected static void assertJsonError(HttpResponse<String> r, int status) {
+		assertThat(r.statusCode()).as(r.body()).isEqualTo(status);
+		assertThat(r.headers().firstValue("Content-Type"))
+				.hasValueSatisfying(t -> assertThat(t).startsWith("application/json"));
+		assertThat(r.body()).startsWith("{\"error\":\"");
 	}
 
 	/** The Set-Cookie header for the named cookie, if the response set it. */

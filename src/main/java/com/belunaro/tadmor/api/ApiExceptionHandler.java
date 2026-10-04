@@ -2,20 +2,25 @@ package com.belunaro.tadmor.api;
 
 import java.util.Map;
 
+import com.belunaro.tadmor.service.ServiceException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Turns exceptions from the API controllers into the spec's error body,
  * {@code {"error": "..."}} (spec/api.md §1.4). Errors raised outside any
- * controller (an unknown path, an unknown method) reach ErrorController.
+ * controller (an unknown path, an unknown method) reach ErrorPageController.
  */
 @RestControllerAdvice(basePackageClasses = ApiExceptionHandler.class)
 public class ApiExceptionHandler {
@@ -23,13 +28,31 @@ public class ApiExceptionHandler {
 	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
 	@ExceptionHandler
-	public ResponseEntity<Map<String, String>> refused(ApiException e) {
+	public ResponseEntity<Map<String, String>> refused(ServiceException e) {
 		return error(e.status(), e.getMessage());
 	}
 
 	@ExceptionHandler({ HttpMessageNotReadableException.class, HttpMediaTypeNotSupportedException.class })
 	public ResponseEntity<Map<String, String>> unreadable(Exception e) {
-		return error(HttpStatus.BAD_REQUEST, "request body must be a JSON object");
+		return error(HttpStatus.BAD_REQUEST, "request body must be a JSON object of the documented shape");
+	}
+
+	/** A path id that is not a positive integer (Id). */
+	@ExceptionHandler
+	public ResponseEntity<Map<String, String>> badPathValue(MethodArgumentTypeMismatchException e) {
+		return error(HttpStatus.BAD_REQUEST, "invalid " + e.getName());
+	}
+
+	/** A unique constraint: a duplicate email, code, number, and so on. */
+	@ExceptionHandler
+	public ResponseEntity<Map<String, String>> duplicate(DuplicateKeyException e) {
+		return error(HttpStatus.CONFLICT, "already exists");
+	}
+
+	/** Any other constraint the schema enforces, such as an unknown foreign key. */
+	@ExceptionHandler
+	public ResponseEntity<Map<String, String>> constraint(DataIntegrityViolationException e) {
+		return error(HttpStatus.UNPROCESSABLE_ENTITY, "the request violates a database rule");
 	}
 
 	@ExceptionHandler
