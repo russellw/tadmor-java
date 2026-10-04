@@ -2,13 +2,13 @@ package com.belunaro.tadmor.api;
 
 import java.util.Map;
 
+import com.belunaro.tadmor.service.DatabaseErrors;
 import com.belunaro.tadmor.service.ServiceException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -43,16 +43,10 @@ public class ApiExceptionHandler {
 		return error(HttpStatus.BAD_REQUEST, "invalid " + e.getName());
 	}
 
-	/** A unique constraint: a duplicate email, code, number, and so on. */
+	/** A refusal by the shared schema: 409 or 422 (DatabaseErrors), else a fault. */
 	@ExceptionHandler
-	public ResponseEntity<Map<String, String>> duplicate(DuplicateKeyException e) {
-		return error(HttpStatus.CONFLICT, "already exists");
-	}
-
-	/** Any other constraint the schema enforces, such as an unknown foreign key. */
-	@ExceptionHandler
-	public ResponseEntity<Map<String, String>> constraint(DataIntegrityViolationException e) {
-		return error(HttpStatus.UNPROCESSABLE_ENTITY, "the request violates a database rule");
+	public ResponseEntity<Map<String, String>> database(DataAccessException e) {
+		return DatabaseErrors.refusal(e).map(this::refused).orElseGet(() -> fault(e));
 	}
 
 	@ExceptionHandler

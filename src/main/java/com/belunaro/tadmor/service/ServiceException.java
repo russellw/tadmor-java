@@ -33,6 +33,13 @@ public class ServiceException extends RuntimeException {
 		return new ServiceException(HttpStatus.NOT_FOUND, "not found");
 	}
 
+	/** 404 when an update matched no row. */
+	public static void found(int rowsUpdated) {
+		if (rowsUpdated == 0) {
+			throw notFound();
+		}
+	}
+
 	/** 422: a value is unacceptable, or a business rule refuses the request. */
 	public static ServiceException unprocessable(String message) {
 		return new ServiceException(HttpStatus.UNPROCESSABLE_ENTITY, message);

@@ -9,7 +9,8 @@ it; see [`docs/stack.md`](docs/stack.md).
 
 **Status:** early. The server migrates the shared schema on start, serves
 the probes, has login, logout, and sessions for both the JSON API and the
-UI, and has the users API. The rest of the API and UI is still to come.
+UI, and has the users and master data APIs. The rest of the API and UI is
+still to come; `make conformance` passes 9 of its 35 cases.
 
 ## Layout
 
@@ -53,7 +54,9 @@ No dependency download step: every artifact the build uses is already in
 | `JAVA` | `java` | Java launcher the Makefile and `tools/conformance.sh` use |
 
 Endpoints so far: `GET /healthz` (liveness), `GET /readyz` (database
-reachable), `/api/auth/*`, and `/api/users` (spec/api.md §3 and §5.1).
+reachable), `/api/auth/*`, `/api/users`, and master data: organizations,
+customers, suppliers, products, accounts (with their ledgers), tax codes,
+payment terms, and warehouses (spec/api.md §3, §5.1 to §5.6).
 
 ## Build, run, test
 
