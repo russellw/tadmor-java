@@ -12,6 +12,9 @@ import com.belunaro.tadmor.service.SettingsService;
 import com.belunaro.tadmor.service.SettingsService.ExchangeRate;
 import com.belunaro.tadmor.service.SettingsService.ExchangeRateInput;
 import com.belunaro.tadmor.service.SettingsService.Settings;
+import com.belunaro.tadmor.service.YearEndService;
+import com.belunaro.tadmor.service.YearEndService.Closed;
+import com.belunaro.tadmor.service.YearEndService.Reopened;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +28,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Fiscal years and accounting periods (spec/api.md §5.7), and the ledger
+ * Fiscal years and accounting periods, with year-end close and reopen
+ * (spec/api.md §5.7), and the ledger
  * settings and exchange rates (§5.8). Changing the settings is for
  * administrators only (SecurityConfig).
  */
@@ -35,10 +39,12 @@ public class CalendarController {
 
 	private final CalendarService calendar;
 	private final SettingsService settings;
+	private final YearEndService yearEnd;
 
-	public CalendarController(CalendarService calendar, SettingsService settings) {
+	public CalendarController(CalendarService calendar, SettingsService settings, YearEndService yearEnd) {
 		this.calendar = calendar;
 		this.settings = settings;
+		this.yearEnd = yearEnd;
 	}
 
 	@GetMapping("/fiscal-years")
@@ -60,6 +66,21 @@ public class CalendarController {
 	public ResponseEntity<Void> updateFiscalYear(@PathVariable Id id, @RequestBody FiscalYearInput in) {
 		calendar.updateFiscalYear(id.value(), in);
 		return Responses.noContent();
+	}
+
+	public record CloseRequest(Integer retainedEarningsAccountId) {
+	}
+
+	/** Administrators only (SecurityConfig). */
+	@PostMapping("/fiscal-years/{id}/close")
+	public Closed closeFiscalYear(@PathVariable Id id, @RequestBody(required = false) CloseRequest in) {
+		return yearEnd.close(id.value(), in == null ? null : in.retainedEarningsAccountId());
+	}
+
+	/** Administrators only (SecurityConfig). */
+	@PostMapping("/fiscal-years/{id}/reopen")
+	public Reopened reopenFiscalYear(@PathVariable Id id) {
+		return yearEnd.reopen(id.value());
 	}
 
 	@GetMapping("/accounting-periods")

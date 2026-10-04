@@ -3,6 +3,8 @@ package com.belunaro.tadmor.service;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
@@ -101,5 +103,148 @@ public class LedgerService {
 				    v.value_on_hand::numeric(19,4)::text AS value_on_hand, v.avg_unit_cost::numeric(19,4)::text AS avg_unit_cost
 				FROM stock_valuation v JOIN products p ON p.id = v.product_id
 				ORDER BY p.sku""").query(ValuationRow.class).list();
+	}
+
+	// ---- statements (spec/domain.md §10) ----
+
+	/** An account's activity in its natural sign. */
+	public record ActivityRow(int accountId, String code, String name, String accountType, String amount) {
+	}
+
+	/** Posted lines joined to their entry and account, in base amounts. */
+	private static final String LINES = """
+			FROM journal_lines jl
+			JOIN journal_entries je ON je.id = jl.journal_entry_id
+			JOIN accounts a ON a.id = jl.account_id
+			WHERE je.status = 'posted'""";
+
+	private static final String IN_RANGE = """
+			  AND (CAST(:from AS date) IS NULL OR je.entry_date >= CAST(:from AS date))
+			  AND (CAST(:to AS date) IS NULL OR je.entry_date <= CAST(:to AS date))""";
+
+	/**
+	 * Revenue and expense accounts with lines in the range, excluding closing
+	 * entries: revenue as Σ(credit − debit), expense as Σ(debit − credit).
+	 */
+	public List<ActivityRow> profitAndLoss(LocalDate from, LocalDate to) {
+		return jdbc.sql("""
+				SELECT a.id AS account_id, a.code, a.name, a.account_type,
+				    sum(CASE WHEN a.account_type = 'revenue' THEN jl.base_credit - jl.base_debit
+				             ELSE jl.base_debit - jl.base_credit END)::numeric(19,4)::text AS amount
+				""" + LINES + """
+
+				  AND NOT je.is_closing AND a.account_type IN ('revenue', 'expense')
+				""" + IN_RANGE + """
+
+				GROUP BY a.id, a.code, a.name, a.account_type
+				ORDER BY a.code""").param("from", from).param("to", to).query(ActivityRow.class).list();
+	}
+
+	public record BalanceSheet(List<ActivityRow> rows, String currentEarnings) {
+	}
+
+	/**
+	 * Asset, liability, and equity accounts with lines on or before the date
+	 * (assets debit-positive, the others credit-positive), and the earnings
+	 * not yet closed into equity: Σ(credit − debit) over revenue and expense
+	 * lines, closing entries included, so that assets = liabilities + equity
+	 * + current earnings.
+	 */
+	public BalanceSheet balanceSheet(LocalDate asOf) {
+		List<ActivityRow> rows = jdbc.sql("""
+				SELECT a.id AS account_id, a.code, a.name, a.account_type,
+				    sum(CASE WHEN a.account_type = 'asset' THEN jl.base_debit - jl.base_credit
+				             ELSE jl.base_credit - jl.base_debit END)::numeric(19,4)::text AS amount
+				""" + LINES + """
+
+				  AND a.account_type IN ('asset', 'liability', 'equity')
+				  AND (CAST(:to AS date) IS NULL OR je.entry_date <= CAST(:to AS date))
+				GROUP BY a.id, a.code, a.name, a.account_type
+				ORDER BY a.code""").param("to", asOf).query(ActivityRow.class).list();
+		String earnings = jdbc.sql("SELECT COALESCE(sum(jl.base_credit - jl.base_debit), 0)::numeric(19,4)::text " + LINES + """
+
+				  AND a.account_type IN ('revenue', 'expense')
+				  AND (CAST(:to AS date) IS NULL OR je.entry_date <= CAST(:to AS date))""")
+				.param("to", asOf).query(String.class).single();
+		return new BalanceSheet(rows, earnings);
+	}
+
+	public record CashFlowRow(int accountId, String code, String name, String activity, String amount) {
+	}
+
+	public record CashFlow(String netIncome, List<CashFlowRow> rows, String netCashFlow, String openingCash,
+			String closingCash) {
+	}
+
+	/**
+	 * The indirect cash-flow statement: net income, then each non-cash
+	 * balance-sheet account's Σ(credit − debit) in the range, labelled with
+	 * its activity (closing entries excluded from both), and the cash
+	 * accounts' opening balance, movement, and closing balance, so that net
+	 * income + Σ rows = net cash flow, and opening + net = closing.
+	 */
+	public CashFlow cashFlow(LocalDate from, LocalDate to) {
+		String netIncome = jdbc.sql("SELECT COALESCE(sum(jl.base_credit - jl.base_debit), 0)::numeric(19,4)::text " + LINES
+				+ "\n  AND NOT je.is_closing AND a.account_type IN ('revenue', 'expense')\n" + IN_RANGE)
+				.param("from", from).param("to", to).query(String.class).single();
+		List<CashFlowRow> rows = jdbc.sql("""
+				SELECT a.id AS account_id, a.code, a.name, a.cash_flow_activity AS activity,
+				    sum(jl.base_credit - jl.base_debit)::numeric(19,4)::text AS amount
+				""" + LINES + """
+
+				  AND NOT je.is_closing AND NOT a.is_cash AND a.account_type IN ('asset', 'liability', 'equity')
+				""" + IN_RANGE + """
+
+				GROUP BY a.id, a.code, a.name, a.cash_flow_activity
+				ORDER BY a.code""").param("from", from).param("to", to).query(CashFlowRow.class).list();
+		record Cash(String openingCash, String netCashFlow, String closingCash) {
+		}
+		Cash cash = jdbc.sql("""
+				SELECT COALESCE(sum(jl.base_debit - jl.base_credit)
+				           FILTER (WHERE CAST(:from AS date) IS NOT NULL AND je.entry_date < CAST(:from AS date)), 0)
+				           ::numeric(19,4)::text AS opening_cash,
+				       COALESCE(sum(jl.base_debit - jl.base_credit)
+				           FILTER (WHERE (CAST(:from AS date) IS NULL OR je.entry_date >= CAST(:from AS date))
+				                     AND (CAST(:to AS date) IS NULL OR je.entry_date <= CAST(:to AS date))), 0)
+				           ::numeric(19,4)::text AS net_cash_flow,
+				       COALESCE(sum(jl.base_debit - jl.base_credit)
+				           FILTER (WHERE CAST(:to AS date) IS NULL OR je.entry_date <= CAST(:to AS date)), 0)
+				           ::numeric(19,4)::text AS closing_cash
+				""" + LINES + "\n  AND a.is_cash").param("from", from).param("to", to).query(Cash.class).single();
+		return new CashFlow(netIncome, rows, cash.netCashFlow(), cash.openingCash(), cash.closingCash());
+	}
+
+	// ---- aging ----
+
+	/** A party's posted documents with a balance, bucketed by due date against today (UTC). */
+	public record AgingRow(int partyId, String partyName, String totalOutstanding, String notYetDue,
+			// Digits defeat both name conversions: the row mapper looks for columns named
+			// days130 and days_over90 (aliased so in the query), and snake case would
+			// render those names too.
+			@JsonProperty("days_1_30") String days130, @JsonProperty("days_31_60") String days3160,
+			@JsonProperty("days_61_90") String days6190, @JsonProperty("days_over_90") String daysOver90) {
+	}
+
+	/** Receivables aging, from the schema's ar_aging view. */
+	public List<AgingRow> receivablesAging() {
+		return aging("ar_aging", "customer_id", "customers");
+	}
+
+	/** Payables aging, from the schema's ap_aging view. */
+	public List<AgingRow> payablesAging() {
+		return aging("ap_aging", "supplier_id", "suppliers");
+	}
+
+	private List<AgingRow> aging(String view, String party, String partyTable) {
+		return jdbc.sql("""
+				SELECT g.%2$s AS party_id, o.name AS party_name,
+				    COALESCE(g.total_outstanding, 0)::numeric(19,4)::text AS total_outstanding,
+				    COALESCE(g.not_yet_due, 0)::numeric(19,4)::text AS not_yet_due,
+				    COALESCE(g.days_1_30, 0)::numeric(19,4)::text AS days130,
+				    COALESCE(g.days_31_60, 0)::numeric(19,4)::text AS days3160,
+				    COALESCE(g.days_61_90, 0)::numeric(19,4)::text AS days6190,
+				    COALESCE(g.days_over_90, 0)::numeric(19,4)::text AS days_over90
+				FROM %1$s g JOIN %3$s p ON p.id = g.%2$s JOIN organizations o ON o.id = p.organization_id
+				ORDER BY g.%2$s""".formatted(view, party, partyTable)).query(AgingRow.class).list();
 	}
 }
