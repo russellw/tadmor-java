@@ -147,7 +147,7 @@ first. In particular:
 
 - **Vendored and committed.** The local Maven repository the build
   resolves, holding the runtime, test and plugin artifacts with their
-  POMs (about 75 MB), is committed under `vendor/`, and the Makefile runs
+  POMs (1,040 files, 77 MB), is committed under `vendor/`, and the Makefile runs
   Maven offline (`-o`) against it. A clean clone therefore builds with no
   access to Maven Central. Unlike Go and PHP, what is vendored is
   compiled bytecode, not source, so vendoring buys integrity and
@@ -167,11 +167,13 @@ first. In particular:
 - **Cooldown.** No version published less than 7 days ago, as tadmor's
   pnpm policy requires. Maven has no such setting, so the vendoring script
   checks each new artifact's publication date on Central before adding it.
-- **Hermetic build.** Offline from a clean clone with only the JDK and the
-  wrapper's Maven distribution (level 3 of tadmor's ladder). Level 4
-  (byte-identical builds) is the target, using Maven's
-  `project.build.outputTimestamp`, and is to be verified by the procedure
-  in tadmor's `docs/counterpart-metrics.md` §3.
+- **Hermetic build: level 4.** Measured 2026-10-04 at the first skeleton
+  commit: two fresh clones, each built with `mvnw -o` in a container with
+  `--network=none`, given only a JDK 25 and the wrapper's Maven
+  distribution (mounted read-only), produced byte-identical
+  `target/tadmor.jar`s. Maven's `project.build.outputTimestamp` makes this
+  possible. Identical output needs the same JDK build; a different vendor's
+  `javac` may produce different class files.
 
 ## Consequences for the shared schema
 
