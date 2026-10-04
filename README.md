@@ -7,21 +7,25 @@ with server-rendered pages. The counterparts exist to compare supply-chain
 exposure, and this one measures mainstream Spring Boot as teams actually use
 it; see [`docs/stack.md`](docs/stack.md).
 
-**Status:** project skeleton. The server migrates the shared schema on start
-and serves the probes; the API and UI are still to come.
+**Status:** early. The server migrates the shared schema on start, serves
+the probes, and has login, logout, and sessions for both the JSON API and
+the UI. The rest of the API and UI is still to come.
 
 ## Layout
 
 ```
 src/main/java/com/belunaro/tadmor/
+  AddUser, ResetDb command-line tools (java -jar tadmor.jar adduser|resetdb)
   db/              connection pool from DATABASE_URL; the migration runner
-  web/             HTTP handlers
-  security/        the Spring Security filter chain
+  security/        Spring Security: credentials, sessions, the filter chain
+  api/             the JSON API of spec/api.md
+  ui/              the server-rendered UI of spec/domain.md §13
+  web/             probes and the error page, shared by both
 src/main/resources/   application.properties, Thymeleaf templates
 src/test/java/     JUnit tests (integration tests use TEST_DATABASE_URL)
 spec/, conformance/, db/migrations/   copied from tadmor (spec/UPSTREAM); never edited here
 vendor/            the Maven repository the build resolves, committed (vendor/lock.txt)
-tools/             vendor.py (vendoring)
+tools/             vendor.py (vendoring), conformance.sh (suite wrapper)
 docs/              decisions and notes
 ```
 
@@ -45,17 +49,20 @@ No dependency download step: every artifact the build uses is already in
 | `HTTP_ADDR` | `:8080` | Listen address, `host:port` |
 | `PORT` | unset | Listen port; overrides the port in `HTTP_ADDR` (Cloud Run injects it) |
 | `TEST_DATABASE_URL` | none | Database the integration tests wipe and use |
+| `JAVA` | `java` | Java launcher the Makefile and `tools/conformance.sh` use |
 
-Endpoints so far: `GET /healthz` (liveness) and `GET /readyz` (database
-reachable).
+Endpoints so far: `GET /healthz` (liveness), `GET /readyz` (database
+reachable), and `/api/auth/login`, `/api/auth/logout`, `/api/auth/me`.
 
 ## Build, run, test
 
 ```sh
 make db              # once: a local Postgres in a container
+make adduser EMAIL=me@example.com NAME='My Name'    # password on stdin; migrates first
 make build           # target/tadmor.jar, offline from vendor/
 make run             # build and run on 127.0.0.1:8080
 make test            # the JUnit suite
+make conformance     # tadmor's conformance suite, from a wiped database
 make vendor-check    # vendor/ against vendor/lock.txt
 ```
 

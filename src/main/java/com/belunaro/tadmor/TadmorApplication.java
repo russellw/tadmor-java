@@ -1,5 +1,6 @@
 package com.belunaro.tadmor;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -10,9 +11,24 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class TadmorApplication {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		// "Today" is the UTC date (spec/api.md §1.2), here as in the database.
 		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+		if (args.length > 0) {
+			// Out-of-band commands; anything else is passed to Spring.
+			switch (args[0]) {
+			case "adduser" -> {
+				AddUser.main(Arrays.copyOfRange(args, 1, args.length));
+				return;
+			}
+			case "resetdb" -> {
+				ResetDb.main(Arrays.copyOfRange(args, 1, args.length));
+				return;
+			}
+			default -> {
+			}
+			}
+		}
 		SpringApplication app = new SpringApplication(TadmorApplication.class);
 		app.setDefaultProperties(listenProperties(System.getenv("HTTP_ADDR"), System.getenv("PORT")));
 		app.run(args);

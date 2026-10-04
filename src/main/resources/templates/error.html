@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${status == 404 ? 'Not found' : 'Error'} + ' · tadmor'">Error · tadmor</title>
+</head>
+<body>
+<main>
+  <h1 th:text="${status == 404 ? 'Not found' : 'Something went wrong'}">Not found</h1>
+  <p th:if="${status == 404}">There is nothing at this address.</p>
+  <p th:unless="${status == 404}" th:text="${status} + ' ' + ${message}">500 internal error</p>
+  <p><a th:href="@{/}">Go to the home screen</a></p>
+</main>
+</body>
+</html>

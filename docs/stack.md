@@ -178,14 +178,42 @@ first. In particular:
 ## Consequences for the shared schema
 
 The users and sessions tables the spec relies on are defined by the shared
-schema. Spring Security is used for the filter chain, password hashing
-and access rules, but its session and user storage are backed by the
-shared tables (a custom `SecurityContextRepository` and
-`UserDetailsService`), so Spring adds no tables. Spring Session is not
-used. Migrations are applied at startup by a small runner of our own that
-follows `spec/README.md` (every `*.up.sql` in lexical order, each in its
-own transaction, recorded in `schema_migrations`). Every connection runs
-in UTC.
+schema, so Spring adds no tables of its own. Migrations are applied at
+startup by a small runner of our own that follows `spec/README.md` (every
+`*.up.sql` in lexical order, each in its own transaction, recorded in
+`schema_migrations`). Every connection runs in UTC.
+
+## Authentication
+
+Spring Security does the work it is usually trusted with, and the shared
+tables do the storage:
+
+- **Credentials.** `DaoAuthenticationProvider` over a `UserDetailsService`
+  that reads the shared `users` table. It finds only active users, so a
+  deactivated user is "not found" rather than "disabled" and gets the same
+  dummy password check as an unknown email. All three login failures take
+  the same time, as `api.md` §3 asks.
+- **Password hashes.** Spring Security's default `DelegatingPasswordEncoder`,
+  which is bcrypt with the scheme recorded in the hash (`{bcrypt}...`).
+  tadmor uses PBKDF2; the scheme is not contract (`domain.md` §12).
+- **Sessions.** tadmor's model: a random token in an `HttpOnly`,
+  `SameSite=Lax` cookie (`tadmor_session`), stored only as its SHA-256 in
+  `sessions`, valid for a fixed 30 days. A custom
+  `SecurityContextRepository` resolves the cookie on each request,
+  rereading the user so that deactivation and demotion take effect
+  immediately. There is no `HttpSession` (the policy is `STATELESS`) and no
+  Spring Session.
+- **One session for API and UI.** The JSON login and the UI's login form
+  share the credential check and the cookie. An unauthenticated API call
+  gets a JSON 401; an unauthenticated page redirects to `/login`.
+- **CSRF.** UI forms carry Spring Security's token, kept in a cookie
+  (`CookieCsrfTokenRepository`) so that no `HttpSession` is needed. The API
+  is exempt, relying on the `SameSite=Lax` session cookie as tadmor does.
+
+One pgjdbc trap is worth recording: pgjdbc sends string parameters as
+`varchar`, and `citext = varchar` resolves to case-sensitive text equality.
+Queries on citext columns (emails) therefore cast the parameter
+(`email = ?::citext`), which tadmor's driver never needed.
 
 ## Printing
 
