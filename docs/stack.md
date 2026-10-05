@@ -45,25 +45,38 @@ Resolved on 2026-10-04 with Spring Boot 4.1.1 (published 2026-08-20) and
 its BOM, by `mvn dependency:list` and a `mvn package` into an empty local
 repository (Maven 3.9, Temurin 25, linux/x64).
 
-Identities are counted by **Maven Central namespace owner**. Central
-grants publishing rights per verified namespace (groupId prefix), so for
-example `org.springframework.*` is one identity and every `org.apache.*`
-and `commons-*` group is the ASF. Central publishes no account list, so
-an organization counts once, as it does for Go modules in
-`docs/counterpart-metrics.md`. `tools/measure.py` in tadmor does not yet
-handle Maven, and these figures are a careful hand count until it does.
+Identities are counted by **Maven Central namespace**. Central grants
+publishing rights per verified namespace, so the namespace is the
+identity: a reversed domain (`org.springframework`, `org.apache`), the
+user namespace of a code host (`io.github.user`), or, for a groupId
+without a domain, its first part (`jakarta`). The old domainless
+`commons-*` groups count as the ASF's `org.apache`. Central publishes no
+account list, so an organization counts once per namespace it holds.
 
-| | Jars | Identities |
+These figures come from `dependencies.json`, which `tools/vendor.py
+manifest` writes. tadmor's `tools/measure.py` reads it, so the figures
+are reproducible (`tools/measure.py ../tadmor-java`).
+
+| | Jars | Namespaces |
 | --- | ---: | ---: |
-| Runtime | **68** | **~12** |
-| Build only (Maven plugins and their trees) | 70 | ~15 more |
-| Test only (`spring-boot-starter-test`) | 28 | ~12 |
+| Runtime | **68** | **17** |
+| Build only (Maven plugins and their trees) | 76 | 20 (14 not in runtime) |
+| Test only (`spring-boot-starter-test`) | 28 | 17 |
+| Runtime + build | 144 | **31** |
+
+An earlier hand count put the runtime at about 12 identities, by merging
+namespaces one organization holds: Thymeleaf, attoparser, and unbescape
+(one author, three namespaces), Jakarta and Eclipse (`jakarta`,
+`org.eclipse`), QOS.ch (`ch.qos`, `org.slf4j`), and FasterXML
+(`com.fasterxml`, and Jackson 3's `tools.jackson`). The namespace rule
+counts each grant, because each is a separate account that can publish.
+The hand count's 70 build-only jars were also an estimate.
 
 **Runtime**, by identity:
 
 | Identity | Jars | What |
 | --- | ---: | --- |
-| Spring (Broadcom) | 39 | Spring Boot and its starters (25, several of them empty starter jars), Spring Framework (10), Spring Security (4) |
+| Spring (Broadcom), `org.springframework` | 39 | Spring Boot and its starters (25, several of them empty starter jars), Spring Framework (10), Spring Security (4) |
 | Apache Software Foundation | 6 | Tomcat (core, el, websocket), log4j-api and log4j-to-slf4j, commons-logging |
 | FasterXML | 3 | Jackson 3 core and databind, Jackson 2 annotations |
 | QOS.ch | 4 | Logback, slf4j-api, jul-to-slf4j |
@@ -93,14 +106,15 @@ apiguardian, all the JUnit team), Mockito with ByteBuddy and Objenesis,
 AssertJ, Hamcrest, Awaitility, JSONassert (with Vaadin's android-json),
 Jayway JsonPath (with json-smart), XMLUnit, and ASM.
 
-For comparison (from the counterparts' own docs):
+For comparison (runtime figures by tadmor's `tools/measure.py`, from each repository's manifest, 2026-10-05; tadmor-php's from its own docs until it has a manifest):
 
 | Implementation | Runtime packages | Runtime identities |
 | --- | ---: | ---: |
-| tadmor-java (Spring Boot, JDBC) | 68 | ~12 |
-| tadmor-python (Django) | 5 | ~4 |
+| tadmor-java (Spring Boot, JDBC) | 68 | 17 namespaces |
+| tadmor-python (Django) | 5 | 7 PyPI accounts |
+| tadmor-dotnet (ASP.NET Core, EF Core) | 6 | 8 NuGet accounts |
 | tadmor-php (Laravel) | 73 | 37 accounts |
-| tadmor, runtime+build | 179 | 179 |
+| tadmor (runtime only) | 99 | 58 |
 
 ## Why JDBC rather than JPA
 

@@ -35,7 +35,7 @@ src/main/resources/   application.properties, Thymeleaf templates, app.css, and 
 src/test/java/     JUnit tests (integration tests use TEST_DATABASE_URL)
 spec/, conformance/, db/migrations/   copied from tadmor (spec/UPSTREAM); never edited here
 vendor/            the Maven repository the build resolves, committed (vendor/lock.txt)
-tools/             vendor.py (vendoring), conformance.sh (suite wrapper)
+tools/             vendor.py (vendoring, dependencies.json), conformance.sh (suite wrapper)
 docs/              decisions and notes
 ```
 
@@ -84,7 +84,7 @@ make build           # target/tadmor.jar, offline from vendor/
 make run             # build and run on 127.0.0.1:8080
 make test            # the JUnit suite
 make conformance     # tadmor's conformance suite, from a wiped database
-make vendor-check    # vendor/ against vendor/lock.txt
+make vendor-check    # vendor/ and dependencies.json against vendor/lock.txt
 ```
 
 > The integration tests **drop and recreate the `public` schema** of

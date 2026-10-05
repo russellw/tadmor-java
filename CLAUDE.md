@@ -20,6 +20,8 @@ third-party artifacts are the starters listed in docs/stack.md with the trees th
 Boot BOM resolves for them, plus the Maven plugins the build uses. New dependencies need
 a conversation first. The resolved Maven repository is committed under vendor/, and the
 build runs offline against it; nothing is fetched from Maven Central at build or run time.
+A dependency change commits vendor/, vendor/lock.txt, and dependencies.json together
+(tools/vendor.py sync writes all three).
 
 Working on it:
 Business rules live in service/, shared by the JSON API (api/) and the HTML UI (ui/).

@@ -38,7 +38,7 @@ conformance: build ## Run tadmor's conformance suite against a fresh server (wip
 clean: ## Remove build output
 	rm -rf target
 
-vendor-check: ## Verify vendor/ matches vendor/lock.txt (offline)
+vendor-check: ## Verify vendor/ and dependencies.json against vendor/lock.txt (offline)
 	tools/vendor.py check
 
 vendor-sync: ## Re-resolve vendor/ from Maven Central and rewrite the lock (network)
