@@ -7,7 +7,7 @@ with server-rendered pages. The counterparts exist to compare supply-chain
 exposure, and this one measures mainstream Spring Boot as teams actually use
 it; see [`docs/stack.md`](docs/stack.md).
 
-**Status:** early. The server migrates the shared schema on start, serves
+**Status:** complete against the spec at `spec/UPSTREAM`. The server migrates the shared schema on start, serves
 the probes, has login, logout, and sessions for both the JSON API and the
 UI, and has the users, master data, calendar, and settings APIs, and
 invoices, bills, credit notes, and payments with posting and settlement,
@@ -15,7 +15,7 @@ orders and stock movements, the financial reports, year-end close, bank
 reconciliation, and printing and email: the JSON API is complete, and
 `make conformance` passes all 35 of its cases. The server-rendered UI covers
 the checklist of spec/domain.md §13; see [`docs/ui-coverage.md`](docs/ui-coverage.md)
-for how each item was checked, and what still wants a browser walk-through.
+for how each item was checked, including a browser walk-through.
 
 ## Layout
 
@@ -64,7 +64,7 @@ No dependency download step: every artifact the build uses is already in
 | `TEST_DATABASE_URL` | none | Database the integration tests wipe and use |
 | `JAVA` | `java` | Java launcher the Makefile and `tools/conformance.sh` use |
 
-Endpoints so far: `GET /healthz` (liveness), `GET /readyz` (database
+Endpoints: `GET /healthz` (liveness), `GET /readyz` (database
 reachable), `/api/auth/*`, `/api/users`, and master data: organizations,
 customers, suppliers, products, accounts (with their ledgers), tax codes,
 payment terms, and warehouses; fiscal years and accounting periods; and

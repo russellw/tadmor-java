@@ -188,7 +188,9 @@ first. In particular:
   commit: two fresh clones, each built with `mvnw -o` in a container with
   `--network=none`, given only a JDK 25 and the wrapper's Maven
   distribution (mounted read-only), produced byte-identical
-  `target/tadmor.jar`s. Maven's `project.build.outputTimestamp` makes this
+  `target/tadmor.jar`s. Measured again on 2026-10-06 at `4fad909`, with
+  the API and UI complete, in the `eclipse-temurin:25-jdk` image: the
+  two jars were again byte-identical. Maven's `project.build.outputTimestamp` makes this
   possible. Identical output needs the same JDK build; a different vendor's
   `javac` may produce different class files.
 

@@ -1,6 +1,7 @@
 # UI coverage
 
-**Status:** written 2026-10-04, when the UI was first completed.
+**Status:** written 2026-10-04, when the UI was first completed; the
+browser walk-through it owed was done on 2026-10-06 (below).
 
 This records where each item of the UI checklist in `spec/domain.md` §13 is
 met, and how it was checked. `docs/counterpart-metrics.md` in tadmor asks
@@ -13,10 +14,19 @@ sessions, forms posted with their CSRF tokens, the server's responses read
 back. "Smoke" means the screen was rendered against a live server with
 data and inspected, but no test asserts it. "Script" marks behavior that
 lives in `src/main/resources/static/app.js`: its arithmetic was checked
-against the server's (domain §2) in Node on the spec's examples, but **no
-browser has exercised the page interactions** (adding and removing lines,
-the fills, the confirmation dialogs), since none was available on the
-development machine. A walk-through in a real browser is still owed.
+against the server's (domain §2) in Node on the spec's examples. "Browser"
+means a scripted walk-through in headless Chromium on 2026-10-06, at
+`4fad909`, against a server holding the conformance suite's data. It used
+tadmor's Playwright install from outside this repo, so it is not
+repeatable from here. It signed in, then loaded every screen reachable by
+links (151 pages over 106 routes) with no script error, console error, or
+failed request. On a new sales invoice and a new purchase bill it chose a
+party, which set the party's currency, and a product, which filled the
+description, price, account, tax code, and rate. It added a hand-written
+line with awkward decimals and a tax code, which set the rate, added a
+third line and removed it, saved, and found the previewed total equal to
+the saved one to the ten-thousandth. Then it deleted the draft, dismissing
+the confirmation once (kept) and accepting it once (deleted).
 
 ## General
 
@@ -27,7 +37,7 @@ development machine. A walk-through in a real browser is still owed.
 | G3 | The sidebar on every page | Test (every link opens) |
 | G4 | Users, unpost, reopen, and year-end hidden from non-administrators; enforced in `SecurityConfig` | Test |
 | G5 | Refusals re-show the form or detail screen with the server's message | Test |
-| G6 | `data-confirm` on every delete (documents, payments, orders, movements, statements and their lines, exchange rates) | Test (attribute present); Script (dialog) |
+| G6 | `data-confirm` on every delete (documents, payments, orders, movements, statements and their lines, exchange rates) | Test (attribute present); Script, Browser (dialog) |
 | G7 | Amounts exact, grouped, never rounded (`ui/Format`); currency beside document amounts | Test |
 | G8 | Not-found page for unknown addresses and records | Test |
 
@@ -51,7 +61,7 @@ development machine. A walk-through in a real browser is still owed.
 | Item | Where | Checked |
 | ---- | ----- | ------- |
 | D1 to D4, D6, D7 | `/sales-invoices`, `/purchase-bills`, `/sales-credit-notes`, `/purchase-credit-notes` | Test (form to posted to unposted, refusal, email 501, PDF link) |
-| D2 previews and fills | Line editor | Script |
+| D2 previews and fills | Line editor | Script, Browser |
 | D5 | Credit note detail, "Applied to" | Smoke |
 | P1 to P4 | `/customer-payments`, `/supplier-payments` | Test |
 | O1 to O4, O7 | `/sales-orders`, `/purchase-orders` | Test |
